@@ -60,12 +60,12 @@ class Button:
 
     def handle_button_event(self, pressed: bool):
         self.pressed = pressed
-        just_pressed = pressed == True
-        callbacks = self.on_keydown_callbacks if just_pressed else self.on_keyup_callbacks
+        callbacks = self.on_keydown_callbacks if pressed else self.on_keyup_callbacks
 
         # pressed a button that doesn't changes pages, so darken the background
         # print(f"just_pressed: {just_pressed}; self.button_switches_page: {self.button_switches_page}")
-        if just_pressed and not self.button_switches_page:
+        if pressed and not self.button_switches_page:
+            print("changing background color")
             self.set(background_color=self.style.pressed_background_color)
         # reset the button background color to regular button color
         else:
@@ -89,26 +89,23 @@ class Button:
         button_switches_page=None,
     ):
         if fn is not None:
+            #TODO:any other linking we need to do here if we're attached to a board?.. or did our architecture cover that scenario?
             self.fn = self.ensure_param_count()(fn)
         if name is not None:
             self.name = name
         if button_switches_page is not None:
             self.button_switches_page = button_switches_page
 
-        button_changed = False
         if text is not None:
-            button_changed = True
             self.text = text
         if background_color is not None:
-            button_changed = True
             self.background_color = background_color
         if text_color is not None:
-            button_changed = True
             self.style.text_color = text_color
         if font_size is not None:
-            button_changed = True
             self.style.font_size = font_size
 
+        button_changed = bool(list(filter(None, [text, background_color, text_color, font_size])))
         if button_changed:
             self.alert_slot_button_changed()
 
@@ -117,10 +114,15 @@ class Button:
             self.slot.alert_button_changed()
 
     def set_image(self, index:int, sd:StreamDeck):
+        if self.button_switches_page or not self.pressed:
+            background_color = self.style.background_color
+        # elif self.pressed:
+        else:
+            background_color = self.style.pressed_background_color
         sd.set_key_image(
             index,
             generate_text_image(
-                self.style.pressed_background_color if self.pressed else self.style.background_color,
+                background_color,
                 self.style,
                 self.text,
             ),

@@ -48,8 +48,7 @@ class BoardLayout:
             if pressed:
                 self.apply(board)
 
-        button = Button(handle_return_button_press, style=style)
-        button.text = text
+        button = Button(handle_return_button_press, text=text, style=style, button_switches_page=True)
         return button
 
     def sublayout(self, board:'Board', to_text:str="Page", return_text:str="< Back", style:ButtonStyle=ButtonStyle()):
