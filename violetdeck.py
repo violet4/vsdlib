@@ -9,12 +9,12 @@ import time
 from vsdlib.widgets import VolumeWidget, BrightnessWidget, CalculatorWidget
 from vsdlib.board import Board, BoardLayout
 from vsdlib.buttons import Button, ButtonStyle
-from vsdlib.colors import reds, oranges, yellows, greens, blues, purples, black, pinks
+from vsdlib.colors import reds, oranges, yellows, greens, blues, purples, black, pinks, indigos, violets
 
 
 def color_generator():
     while True:
-        for color in (reds, oranges, yellows, greens, blues, purples):
+        for color in (reds, oranges, yellows, greens, blues, indigos, violets):
             yield color
 
 
@@ -43,9 +43,18 @@ def run_main():
     # main_layout_button: Button = main_layout.create_return_button(board, "< Home")
 
     alphabet_layout, alphabet_page_button = main_layout.sublayout(board, "Alphabet", style=ButtonStyle(**pinks))
-    for i, (letter, colors) in enumerate(zip('ABCDEFGHIJKLMNOPQRSTUVWXYZ', color_generator()), 1):
-        # alphabet_board.set_button(i+1, text=letter, **colors)
-        alphabet_layout.set(Button(text=letter, style=ButtonStyle(**colors)), i)
+    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    i = 0
+    cg = color_generator()
+    for y in range(4):
+        for x in range(1, 7+1):
+            char = alphabet[i]
+            alphabet_layout.set(Button(text=char, style=ButtonStyle(**next(cg))), x, y)
+            i += 1
+            if i >= len(alphabet):
+                break
+        if i >= len(alphabet):
+            break
 
     calc_layout, calc_button = main_layout.sublayout(board, "Calc", style=ButtonStyle(**blues))
     calcwid = CalculatorWidget(board, style=ButtonStyle(**greens))
