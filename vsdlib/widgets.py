@@ -8,6 +8,7 @@ from .colors import grays
 
 class Widget:
     board: Board
+    style: ButtonStyle
     def __init__(self, board:Board, style:ButtonStyle=ButtonStyle()):
         self.board = board
         self.style = style
@@ -55,6 +56,9 @@ class BrightnessWidget(Widget):
     brightness_up_button: Button
     brightness_down_button: Button
 
+    _min_brightness:int = 10
+    _max_brightness:int = 100
+
     def __init__(self, board:Board, style:ButtonStyle=ButtonStyle()):
         super().__init__(board, style)
         self.brightness_display_button = Button(text=str(self.board.brightness), style=style)
@@ -78,11 +82,12 @@ class BrightnessWidget(Widget):
         return change_brightness
 
     def change_brightness(self, diff: int):
+
         self.board.brightness += diff
-        if self.board.brightness < 0:
-            self.board.brightness = 0
-        elif self.board.brightness > 100:
-            self.board.brightness = 100
+        if self.board.brightness < self._min_brightness:
+            self.board.brightness = self._min_brightness
+        elif self.board.brightness > self._max_brightness:
+            self.board.brightness = self._max_brightness
         self.board.sd.set_brightness(self.board.brightness)
         return self.board.brightness
 
@@ -93,53 +98,50 @@ class BrightnessWidget(Widget):
         return self.make_change_brightness_callback(brightness_display_button, -10)
 
 
-class Sign(int):
-    val: int
-    def __init__(self, val):
-        self.val = val
-
-from enum import Enum
-class CalculatorState(Enum):
-    NUMBER = 1
-    OPERATION = NUMBER << 2 # type: ignore
-
-
-class CalculatorWidget(Widget):
-    sign: int
+class NumPadWidget(Widget):
+    number_buttons: Dict[int, Button]
+    entries: List
+    spool_display_widget: Button
     bvalue: Button
-    b0: Button
-    b1: Button
-    b2: Button
-    b3: Button
-    b4: Button
-    b5: Button
-    b6: Button
-    b7: Button
-    b8: Button
-    b9: Button
+    def __init__(self, board:Board, style:ButtonStyle):
+        self.entries = []
+        self.number_buttons: Dict[int, Button] = dict()
+        self.spool_display_widget = Button(text='0', style=style)
+        self.bvalue = Button(text='0', style=style)
+        for i in range(10):
+            self.number_buttons[i] = Button(self.create_number_button_callback(i), text=str(i), style=style)
+
+    def create_number_button_callback(self, number:int):
+        def press_number_button(pressed:bool):
+            if not pressed:
+                return
+            self.entries.append(number)
+            joined = self.get_joined()
+            self.spool_display_widget.set(text=joined)
+            self.bvalue.set(text=f'{eval(joined):.2f}')
+            try:
+                self.bvalue.set(text=f'{eval(joined):.2f}')
+            except:
+                print(f"failed to evaluate: '{joined}'")
+                self.bvalue.set(text=joined)
+        return press_number_button
+
+    def get_joined(self):
+        return ''.join(str(v) for v in self.entries)
+
+
+class CalculatorWidget(NumPadWidget):
+    #TODO:merge to a number_buttons list and index by the number you want, e.g. number_buttons[0] will be the 0 button.
     bplus: Button
     bminus: Button
     bequals: Button
     bmult: Button
     bdiv: Button
     bbackspace: Button
-    state: CalculatorState
-    entries: List
-    spool_display_widget: Button
+    result_style = ButtonStyle(background_color='#37d495', pressed_background_color='#297858')
     def __init__(self, board:Board, style:ButtonStyle=ButtonStyle()):
-        super().__init__(board, style)
+        super().__init__(board, self.result_style)
 
-        self.entries = []
-
-        result_style = ButtonStyle(background_color='#37d495', pressed_background_color='#297858')
-        self.spool_display_widget = Button(text='0', style=result_style)
-        self.bvalue = Button(text='0', style=result_style)
-
-        self.sign: int = 1
-        self.state = CalculatorState.NUMBER
-        for i in range(10):
-            button = Button(self.create_number_button_callback(i), text=str(i), style=style)
-            setattr(self, f'b{i}', button)
         self.bdecimal = Button(self.create_operation_button_callback('.'), text='.', style=style)
 
         operator_style = ButtonStyle(**grays)
@@ -149,7 +151,20 @@ class CalculatorWidget(Widget):
         self.bdiv = Button(self.create_operation_button_callback('/'), text='/', style=operator_style)
         self.bequals = Button(self.create_equals_button_callback(), text='=', style=operator_style)
         self.bbackspace = Button(self.create_backspace_button_callback(), text='<', style=operator_style)
+        self.bclear = Button(self.create_clear_button_callback(), text='Clr', style=operator_style)
 
+    def create_clear_button_callback(self):
+        def perform_clear(pressed:bool):
+            if not pressed:
+                return
+            self.entries.clear()
+            print("setting spool display to ''")
+            self.spool_display_widget.set(text='')
+            # self.spool_display_widget.alert_slot_button_changed()
+            print("setting value display to ''")
+            self.bvalue.set(text='')
+            # self.bvalue.alert_slot_button_changed()
+        return perform_clear
 
     def create_backspace_button_callback(self):
         def perform_backspace(pressed:bool):
@@ -196,16 +211,23 @@ class CalculatorWidget(Widget):
 
         return perform_operation
 
-    def get_joined(self):
-        return ''.join(str(v) for v in self.entries)
 
+class TimerWidget(NumPadWidget):
+    def __init__(self, board:Board, style:ButtonStyle=ButtonStyle()):
+        super().__init__(board, style)
+        self.soonest_countdown_button = Button()
+        button: Button
+        for i, button in self.number_buttons.items():
+            button.fn = self.create_push_button_callback(button.fn, i)
+        # self. = Button()
 
-    def create_number_button_callback(self, number:int):
-        def press_number_button(pressed:bool):
+    def create_push_button_callback(self, button, i):
+        def new_number_button(pressed:bool):
             if not pressed:
                 return
-            self.entries.append(number)
-            joined = self.get_joined()
-            self.spool_display_widget.set(text=joined)
-            self.bvalue.set(text=f'{eval(joined):.2f}')
-        return press_number_button
+            print("pushed a number button", i)
+            button(pressed)
+        return new_number_button
+
+
+

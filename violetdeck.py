@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 """
 Button manages creating/producing pictures while Board manages index locations and setting the picture
+
+TODO:
+* board that makes it easier to remember what i want to code next - todo list
+* numpad
+* timer
+* ..
+
 """
 import os
 import time
@@ -10,12 +17,7 @@ from vsdlib.widgets import VolumeWidget, BrightnessWidget, CalculatorWidget
 from vsdlib.board import Board, BoardLayout
 from vsdlib.buttons import Button, ButtonStyle
 from vsdlib.colors import reds, oranges, yellows, greens, blues, purples, black, pinks, indigos, violets
-
-
-def color_generator():
-    while True:
-        for color in (reds, oranges, yellows, greens, blues, indigos, violets):
-            yield color
+from vsdlib.layouts import TimerLayout, CalcLayout, PositionLayout, AlphabetLayout
 
 
 def create_restart_button(board:Board, style:ButtonStyle=ButtonStyle()):
@@ -35,66 +37,28 @@ def create_restart_button(board:Board, style:ButtonStyle=ButtonStyle()):
 
 
 def run_main():
+    """
+    TODO:switch discord mic between scarlet and obsidian
+    TODO:"off"/"dark" mode - brightness 0, all buttons become "wake up" buttons
+    """
     board = Board()
 
-    BoardLayout.initialize(board.width)
+    BoardLayout.initialize(board)
 
-    main_layout = BoardLayout(board.key_count)
+    main_layout = BoardLayout()
     # main_layout_button: Button = main_layout.create_return_button(board, "< Home")
 
-    alphabet_layout, alphabet_page_button = main_layout.sublayout(board, "Alphabet", style=ButtonStyle(**pinks))
-    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    i = 0
-    cg = color_generator()
-    for y in range(4):
-        for x in range(1, 7+1):
-            char = alphabet[i]
-            alphabet_layout.set(Button(text=char, style=ButtonStyle(**next(cg))), x, y)
-            i += 1
-            if i >= len(alphabet):
-                break
-        if i >= len(alphabet):
-            break
-
-    calc_layout, calc_button = main_layout.sublayout(board, "Calc", style=ButtonStyle(**blues))
-    calcwid = CalculatorWidget(board, style=ButtonStyle(**greens))
-
-    i = 1
-    for y in range(2, 0-1, -1):
-        for x in range(board.width-3, board.width):
-            calc_layout.set(getattr(calcwid, f'b{i}'), x, y)
-            i += 1
-            if i == 10:
-                i = 0
-    calc_layout.set(calcwid.b0, 6, 3)
-
-    calc_layout.set(calcwid.spool_display_widget, 4,0)
-    calc_layout.set(calcwid.bvalue, 4,1)
-
-    calc_layout.set(calcwid.bplus, 0,1)
-    calc_layout.set(calcwid.bminus, 0,2)
-    calc_layout.set(calcwid.bequals, 7,3)
-    calc_layout.set(calcwid.bmult, 1,1)
-    calc_layout.set(calcwid.bdiv, 1,2)
-    calc_layout.set(calcwid.bbackspace, 4,3)
-    calc_layout.set(calcwid.bdecimal, 5,3)
-
-    position_layout, positions_button = main_layout.sublayout(board, "Positions", style=ButtonStyle(**greens))
-    for x in range(board.width):
-        for y in range(board.height):
-            if x+y == 0:
-                continue
-            if position_layout.calc_index(x,y) == board.key_count-1:
-                text = f"{x}, {y}\nwidth={board.width}\nheight={board.height}"
-            else:
-                text = f"{x},{y}"
-            position_layout.set(Button(text=text), x,y)
+    calc = CalcLayout(board, main_layout)
+    position_layout = PositionLayout(board, main_layout)
+    alphabet_layout = AlphabetLayout(board, main_layout)
+    timer = TimerLayout(board, main_layout)
 
     # main page top bar
-    main_layout.set(positions_button, 0)
-    main_layout.set(calc_button, 1)
+    main_layout.set(position_layout.button, 0)
+    main_layout.set(calc.button, 1)
+    main_layout.set(timer.button, 2)
     # ..
-    main_layout.set(alphabet_page_button, 6)
+    main_layout.set(alphabet_layout.button, 6)
     main_layout.set(create_restart_button(board, style=ButtonStyle(**reds)), 7)
 
     brightness_widget = BrightnessWidget(board, style=ButtonStyle(**yellows))

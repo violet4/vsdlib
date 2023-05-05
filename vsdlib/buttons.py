@@ -54,7 +54,10 @@ class Button:
                         new_kwargs[key] = kwargs[key]
                 if 'self' in kwargs:
                     new_kwargs['self'] = self
-                return fn(**new_kwargs)
+                try:
+                    return fn(**new_kwargs)
+                except Exception as e:
+                    print(f"Button function {fn} failed; error:", e)
             return wrapped
         return wrapper
 
@@ -65,7 +68,6 @@ class Button:
         # pressed a button that doesn't changes pages, so darken the background
         # print(f"just_pressed: {just_pressed}; self.button_switches_page: {self.button_switches_page}")
         if pressed and not self.button_switches_page:
-            print("changing background color")
             self.set(background_color=self.style.pressed_background_color)
         # reset the button background color to regular button color
         else:
@@ -73,11 +75,17 @@ class Button:
 
         for callback in callbacks:
             # print("calling callback:", callback)
-            callback()
+            try:
+                callback()
+            except Exception as e:
+                print(f"callback {callback} failed; error:", e)
 
     def __call__(self, *args, **kwargs):
         # print(args, kwargs)
-        return self.fn(*args, **kwargs)
+        try:
+            return self.fn(*args, **kwargs)
+        except Exception as e:
+            print(f"failed to call button function '{self.fn}', error:", e)
 
     def set_slot(self, slot:'ButtonSlot'):
         self.slot = slot
@@ -105,7 +113,7 @@ class Button:
         if font_size is not None:
             self.style.font_size = font_size
 
-        button_changed = bool(list(filter(None, [text, background_color, text_color, font_size])))
+        button_changed = any(list(map(lambda x:x is not None, [text, background_color, text_color, font_size])))
         if button_changed:
             self.alert_slot_button_changed()
 

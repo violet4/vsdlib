@@ -1,5 +1,5 @@
 import time
-from typing import Dict, Optional, Tuple, Callable, List
+from typing import Dict, Optional, Tuple, Callable, List, Type
 
 from StreamDeck.DeviceManager import DeviceManager
 from StreamDeck.Devices.StreamDeck import StreamDeck
@@ -16,18 +16,18 @@ class BoardLayout:
     _initialized: bool = False
 
     @classmethod
-    def initialize(cls, width:int):
+    def initialize(cls, board:'Board'):
         cls._initialized = True
-        cls.width = width
+        cls.width = board.width
+        cls.key_count = board.key_count
 
     @classmethod
     def _check_initialized(cls):
         if not cls._initialized:
             raise Exception("BoardLayout must be initialized before use")
 
-    def __init__(self, key_count:int):
+    def __init__(self):
         self._check_initialized()
-        self.key_count = key_count
         self.positions = {
             i: Button()
             for i in range(self.key_count)
@@ -51,9 +51,21 @@ class BoardLayout:
         button = Button(handle_return_button_press, text=text, style=style, button_switches_page=True)
         return button
 
-    def sublayout(self, board:'Board', to_text:str="Page", return_text:str="< Back", style:ButtonStyle=ButtonStyle()):
+    def sublayout(
+        self, board:'Board',
+        to_text:str="Page",
+        board_class:Optional[Type['BoardLayout']]=None,
+        board_layout:Optional['BoardLayout']=None,
+        return_text:str="< Back", style:ButtonStyle=ButtonStyle()
+    ):
         return_button: Button = self.create_return_button(board, return_text)
-        new_layout = BoardLayout(board.key_count)
+
+        if board_layout is not None:
+            new_layout = board_layout
+        else:
+            board_class = board_class or BoardLayout
+            new_layout = board_class()
+
         new_layout.set(return_button, 0)
         new_page_button = new_layout.create_return_button(board, to_text, style=style)
         return new_layout, new_page_button
