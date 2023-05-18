@@ -2,3 +2,6 @@ __pycache__
 *.pyc
 .ipynb_checkpoints
 todos.db
+file_dialogs.py
+simple.py
+violetdeck.ipynb

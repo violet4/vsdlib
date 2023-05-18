@@ -13,7 +13,7 @@ import os
 import time
 import asyncio
 
-from vsdlib.widgets import VolumeWidget, BrightnessWidget, CalculatorWidget
+from vsdlib.widgets import VolumeWidget, BrightnessWidget, MediaControlWidget
 from vsdlib.board import Board, BoardLayout
 from vsdlib.buttons import Button, ButtonStyle
 from vsdlib.colors import reds, oranges, yellows, greens, blues, purples, black, pinks, indigos, violets
@@ -73,7 +73,15 @@ async def run_main():
     # main_layout.set(TODO.button, 4)
     main_layout.set(create_restart_button(board, style=ButtonStyle(**reds)), 7)
 
+
     # second row
+    media_control_widget = MediaControlWidget()
+    main_layout.set(media_control_widget.prevtrack, 0,1)
+    main_layout.set(media_control_widget.playpause, 1,1)
+    main_layout.set(media_control_widget.nexttrack, 2,1)
+
+
+
     # third row
     main_layout.set(atimelogger.button, 6, 2)
     main_layout.set(emoji_pad.button, 7, 2)

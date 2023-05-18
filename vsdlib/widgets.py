@@ -2,12 +2,18 @@ from typing import Dict, Optional, Tuple, Callable, List
 import subprocess
 
 import pyautogui as pag
+import pyautogui
 
 from .board import Board, BoardLayout
 from .buttons import Button, EmojiButton
 from .button_style import ButtonStyle
 from .colors import grays, greens, blues, reds
 from .contrib.todos import Todo, Session
+
+pyautogui._pyautogui_x11.keyboardMapping['prevtrack']=173 # type: ignore
+pyautogui._pyautogui_x11.keyboardMapping['playpause']=172 # type: ignore
+pyautogui._pyautogui_x11.keyboardMapping['nexttrack']=171 # type: ignore
+
 
 class Widget:
     board: Board
@@ -84,6 +90,13 @@ class VolumeWidget(Widget):
             shell=True,
         ).decode().strip()
         return value.split('[')[1].split(']')[0]
+
+
+class MediaControlWidget(Widget):
+    def __init__(self):
+        self.prevtrack = Button(lambda pressed: pyautogui.press('prevtrack') if pressed else None, text='<')
+        self.playpause = Button(lambda pressed: pyautogui.press('playpause') if pressed else None, text='>||')
+        self.nexttrack = Button(lambda pressed: pyautogui.press('nexttrack') if pressed else None, text='>')
 
 
 class BrightnessWidget(Widget):
