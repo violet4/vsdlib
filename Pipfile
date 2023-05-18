@@ -8,9 +8,15 @@ pillow = "*"
 streamdeck = "*"
 requests = "*"
 beautifulsoup4 = "*"
+pyqt5 = "*"
+pyautogui = "*"
+emoji = "*"
+sqlalchemy = "*"
 
 [dev-packages]
 ipdb = "*"
+jupyter-contrib-nbextensions = "*"
+jupyter = "*"
 
 [requires]
 python_version = "3.10"

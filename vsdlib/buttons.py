@@ -5,7 +5,7 @@ from typing import Optional, Callable, List
 
 from StreamDeck.Devices.StreamDeck import StreamDeck
 
-from .images import generate_text_image
+from .images import generate_text_image, generate_emoji_image
 from .button_style import ButtonStyle
 
 
@@ -156,6 +156,24 @@ class Button:
 
     def clear_slot(self):
         self.slot = None
+
+
+class EmojiButton(Button):
+    def set_image(self, index:int, sd:StreamDeck):
+        if self.button_switches_page or not self.pressed:
+            background_color = self.style.background_color
+        # elif self.pressed:
+        else:
+            background_color = self.style.pressed_background_color
+        sd.set_key_image(
+            index,
+            generate_emoji_image(
+                background_color,
+                self.style,
+                self.text,
+            ),
+        )
+
 
 
 class ButtonSlot:

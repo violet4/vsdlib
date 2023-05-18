@@ -1,6 +1,8 @@
 import time
 from typing import Dict, Optional, Tuple, Callable, List, Type
 
+from PyQt5.QtWidgets import QApplication, QWidget
+
 from StreamDeck.DeviceManager import DeviceManager
 from StreamDeck.Devices.StreamDeck import StreamDeck
 
@@ -20,6 +22,7 @@ class BoardLayout:
         cls._initialized = True
         cls.width = board.width
         cls.key_count = board.key_count
+        cls.board = board
 
     @classmethod
     def _check_initialized(cls):
@@ -36,6 +39,10 @@ class BoardLayout:
     def set(self, button:Button, x, y=None):
         index = self.calc_index(x, y)
         self.positions[index] = button
+
+    def refresh(self):
+        if self.board.active_board_layout is self:
+            self.board.apply(self)
 
     def calc_index(self, x, y=None):
         return x if y is None else y*self.width+x
@@ -86,8 +93,10 @@ class Board:
     shutdown: bool = False
 
     background_color: str
-    pressed_background_color: str
     default_button_style: ButtonStyle = ButtonStyle()
+
+    app: QApplication
+    active_board_layout: Optional[BoardLayout]
 
     def __init__(
         self, sd:Optional[StreamDeck]=None, dm:Optional[DeviceManager]=None,
@@ -110,13 +119,16 @@ class Board:
         ButtonStyle.set_size(self.size)
         self._width = self.sd.KEY_COLS
         self._height = self.key_count//self.sd.KEY_COLS
+        self.active_board_layout = None
 
         self.slots = {
             i: ButtonSlot(i, self.sd)
             for i in range(self.sd.key_count())
         }
 
-        self.sd.set_key_callback(self.handle_key_event)
+        self.sd.set_key_callback_async(self.handle_key_event)
+        # self.sd.set_key_callback(self.handle_key_event)
+        self.app = QApplication([])
 
     @property
     def width(self):
@@ -138,7 +150,6 @@ class Board:
         text:Optional[str]=None,
         text_color:str=black, font_size:int=40,
         background_color=None,
-        pressed_background_color=None,
         button_switches_page=None,
     ):
         index = self.calc_index(x, y)
@@ -153,7 +164,9 @@ class Board:
         self.buttons[index].reset()
         del self.display_keys[name]
 
-    def handle_key_event(self, sd:StreamDeck, index:int, pressed:bool):
+    async def handle_key_event(self, sd:StreamDeck, index:int, pressed:bool):
+    # def handle_key_event(self, sd:StreamDeck, index:int, pressed:bool):
+        print("handle_key_event")
         button = self.buttons[index]
         if pressed:
             self.timers[index] = time.time()
@@ -163,10 +176,15 @@ class Board:
         button.handle_button_event(pressed)
         button(sd, index, pressed)
 
+    # async def handle_key_event(*args, **kwargs):
+    #     print("handle_key_event", args, kwargs)
+
+
     def close(self):
         self.sd.close()
 
     def apply(self, layout:BoardLayout):
+        self.active_board_layout = layout
         self.buttons = layout.positions
         for i in self.buttons.keys():
             self.slots[i].set_button(self.buttons[i])
