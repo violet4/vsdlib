@@ -10,9 +10,16 @@ from .button_style import ButtonStyle
 from .colors import grays, greens, blues, reds
 from .contrib.todos import Todo, Session
 
-pyautogui._pyautogui_x11.keyboardMapping['prevtrack']=173 # type: ignore
-pyautogui._pyautogui_x11.keyboardMapping['playpause']=172 # type: ignore
-pyautogui._pyautogui_x11.keyboardMapping['nexttrack']=171 # type: ignore
+
+#TODO:make this smarter based on platform..
+mappings = {
+    'prevtrack': 173,
+    'playpause': 172,
+    'nexttrack': 171,
+}
+for k, v in mappings.items():
+    if not pyautogui._pyautogui_x11.keyboardMapping.get(k): # type: ignore
+        pyautogui._pyautogui_x11.keyboardMapping[k] = v # type: ignore
 
 
 class Widget:

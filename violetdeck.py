@@ -64,7 +64,11 @@ async def run_main():
     recur_tasks = RecurringTasksLayout(board, main_layout)
     med_tracker = MedTrackerLayout(board, main_layout)
 
-    # main page top bar
+    brightness_widget = BrightnessWidget(board, style=ButtonStyle(**yellows))
+    volume_widget = VolumeWidget(board, style=ButtonStyle(**oranges))
+    media_control_widget = MediaControlWidget()
+
+    # main page top bar - x,0
     main_layout.set(position_layout.button, 0)
     main_layout.set(calc.button, 1)
     main_layout.set(bluetooth.button, 2)
@@ -73,33 +77,29 @@ async def run_main():
     # main_layout.set(TODO.button, 4)
     main_layout.set(create_restart_button(board, style=ButtonStyle(**reds)), 7)
 
+    # second row - x,1
+    main_layout.set(brightness_widget.brightness_up_button, 0, 1)
+    main_layout.set(brightness_widget.brightness_display_button, 1, 1)
+    main_layout.set(brightness_widget.brightness_down_button, 2, 1)
 
-    # second row
-    media_control_widget = MediaControlWidget()
-    main_layout.set(media_control_widget.prevtrack, 0,1)
-    main_layout.set(media_control_widget.playpause, 1,1)
-    main_layout.set(media_control_widget.nexttrack, 2,1)
+    # third row - x,2
+    main_layout.set(media_control_widget.prevtrack, 0,2)
+    main_layout.set(media_control_widget.playpause, 1,2)
+    main_layout.set(media_control_widget.nexttrack, 2,2)
 
-
-
-    # third row
     main_layout.set(atimelogger.button, 6, 2)
     main_layout.set(emoji_pad.button, 7, 2)
-    # fourth row
+
+    # fourth row - x,3
+    main_layout.set(volume_widget.decrease_volume_button, 0, 3)
+    main_layout.set(volume_widget.display_volume_button, 1, 3)
+    main_layout.set(volume_widget.increase_volume_button, 2, 3)
+
     main_layout.set(med_tracker.button, 3, 3)
     main_layout.set(notes.button, 4, 3)
     main_layout.set(timer.button, 5, 3)
     main_layout.set(alphabet_layout.button, 7, 3)
 
-    brightness_widget = BrightnessWidget(board, style=ButtonStyle(**yellows))
-    main_layout.set(brightness_widget.brightness_up_button, 0, 2)
-    main_layout.set(brightness_widget.brightness_display_button, 1, 2)
-    main_layout.set(brightness_widget.brightness_down_button, 2, 2)
-
-    volume_widget = VolumeWidget(board, style=ButtonStyle(**oranges))
-    main_layout.set(volume_widget.decrease_volume_button, 0, 3)
-    main_layout.set(volume_widget.display_volume_button, 1, 3)
-    main_layout.set(volume_widget.increase_volume_button, 2, 3)
 
     try:
         board.apply(main_layout)
