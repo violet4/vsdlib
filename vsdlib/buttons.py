@@ -35,6 +35,7 @@ class Button:
         self.button_switches_page = button_switches_page
         self.text = text or ''
         self.style = style
+        self.background_color_now = style.background_color
 
 
     @staticmethod
@@ -67,10 +68,13 @@ class Button:
 
         # pressed a button that doesn't changes pages, so darken the background
         # print(f"just_pressed: {just_pressed}; self.button_switches_page: {self.button_switches_page}")
-        if pressed and not self.button_switches_page:
+        if self.button_switches_page:
+            # don't change the color otherwise it won't reset properly when you come back to the page
+            pass
+        elif pressed:
             self.set(background_color=self.style.pressed_background_color)
-        # reset the button background color to regular button color
-        else:
+        elif not pressed:
+            # reset the button background color to regular button color
             self.set(background_color=self.style.background_color)
 
         for callback in callbacks:
@@ -95,6 +99,7 @@ class Button:
         text=None, text_color=None, font_size=None,
         background_color=None,
         button_switches_page=None,
+        **kwargs,
     ):
         if fn is not None:
             #TODO:any other linking we need to do here if we're attached to a board?.. or did our architecture cover that scenario?
@@ -107,13 +112,15 @@ class Button:
         if text is not None:
             self.text = text
         if background_color is not None:
-            self.background_color = background_color
+            self.background_color_now = background_color
         if text_color is not None:
             self.style.text_color = text_color
         if font_size is not None:
             self.style.font_size = font_size
 
-        button_changed = any(list(map(lambda x:x is not None, [text, background_color, text_color, font_size])))
+        for k, v in kwargs.items():
+            setattr(self.style, k, v)
+        button_changed = any(list(map(lambda x:x is not None, [text, text_color, font_size]))+[kwargs])
         if button_changed:
             self.alert_slot_button_changed()
 
@@ -122,11 +129,12 @@ class Button:
             self.slot.alert_button_changed()
 
     def set_image(self, index:int, sd:StreamDeck):
-        if self.button_switches_page or not self.pressed:
+        if self.button_switches_page:
             background_color = self.style.background_color
-        # elif self.pressed:
-        else:
+        elif self.pressed:
             background_color = self.style.pressed_background_color
+        else:  # elif not self.pressed:
+            background_color = self.style.background_color
         sd.set_key_image(
             index,
             generate_text_image(
@@ -194,7 +202,6 @@ class ButtonSlot:
 
     def alert_button_changed(self):
         if self.button is not None:
-
             self.button.set_image(self.index, self.sd)
 
     def set_image(self):

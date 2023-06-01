@@ -8,7 +8,7 @@ from StreamDeck.Devices.StreamDeck import StreamDeck
 
 from .button_style import ButtonStyle
 from .buttons import Button, ButtonSlot
-from .colors import black
+from .colors import black, reds, blues, greens, grays
 
 
 class BoardLayout:
@@ -91,6 +91,8 @@ class Board:
     dm: DeviceManager
     default_button_name: Optional[str] = None
     shutdown: bool = False
+    debug_button: Button
+    debug: bool
 
     background_color: str
     default_button_style: ButtonStyle = ButtonStyle()
@@ -104,6 +106,8 @@ class Board:
         self.brightness = 30
         self.timers = dict()
         self.display_keys = dict()
+        self.debug_button = Button(self._switch_debug, text='Debug', style=ButtonStyle(**grays))
+        self.debug = False
 
         if sd is not None and dm is not None:
             self.sd = sd
@@ -129,6 +133,14 @@ class Board:
         self.sd.set_key_callback_async(self.handle_key_event)
         # self.sd.set_key_callback(self.handle_key_event)
         self.app = QApplication([])
+
+    def _switch_debug(self, pressed:bool):
+        if not pressed:
+            return
+        self.debug = not self.debug
+        print("self.debug switched to", self.debug)
+        self.debug_button.set(**(greens if self.debug else grays))
+        # self.debug_button.alert_slot_button_changed()
 
     @property
     def width(self):
@@ -166,12 +178,14 @@ class Board:
 
     async def handle_key_event(self, sd:StreamDeck, index:int, pressed:bool):
     # def handle_key_event(self, sd:StreamDeck, index:int, pressed:bool):
-        print("handle_key_event")
         button = self.buttons[index]
         if pressed:
             self.timers[index] = time.time()
         elif index in self.timers:
             print(time.time()-self.timers[index])
+
+        if pressed and self.debug:
+            import ipdb; ipdb.set_trace()
 
         button.handle_button_event(pressed)
         button(sd, index, pressed)

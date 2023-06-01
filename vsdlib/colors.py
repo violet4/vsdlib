@@ -13,4 +13,4 @@ pinks = dict(background_color="#e31296", pressed_background_color="#7a1555")
 grays = dict(background_color="#ccc", pressed_background_color="#666")
 indigos = dict(background_color="#4b00b2", pressed_background_color="#2b0058")
 violets = dict(background_color="#6500b0", pressed_background_color="#320056")
- 
+grays = dict(background_color="#ccc", pressed_background_color="#888")

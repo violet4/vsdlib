@@ -76,6 +76,7 @@ async def run_main():
     main_layout.set(numpad.button, 4,0)
     # main_layout.set(TODO.button, 4)
     main_layout.set(create_restart_button(board, style=ButtonStyle(**reds)), 7)
+    main_layout.set(board.debug_button, 6)
 
     # second row - x,1
     main_layout.set(brightness_widget.brightness_up_button, 0, 1)
