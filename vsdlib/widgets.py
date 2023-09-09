@@ -1,14 +1,19 @@
 from typing import Dict, Optional, Tuple, Callable, List
 import subprocess
+import time
+import threading
 
 import pyautogui as pag
 import pyautogui
 
+import alsaaudio
+
 from .board import Board, BoardLayout
 from .buttons import Button, EmojiButton
 from .button_style import ButtonStyle
-from .colors import grays, greens, blues, reds
+from .colors import grays, greens, blues, reds, pinks
 from .contrib.todos import Todo, Session
+from .images import get_asset_path
 
 
 #TODO:make this smarter based on platform..
@@ -30,16 +35,60 @@ class Widget:
         self.style = style
 
 
+from contextlib import contextmanager
+
+
+def get_window_by_name(search_str:str):
+    return subprocess.check_output(['xdotool', 'search', '--onlyvisible', '--class', search_str]).decode().strip()
+
+
+@contextmanager
+def activate_window(search_str:str):
+    """
+    search_str e.g. 'discord'
+    """
+    previous_window_id:str = subprocess.check_output(['xdotool', 'getactivewindow']).decode().strip()
+    new_active_window_id:str = get_window_by_name(search_str)
+
+    subprocess.call(['xdotool', 'windowactivate', new_active_window_id])
+    yield
+    subprocess.call(['xdotool', 'windowactivate', previous_window_id])
+
+
+def send_hotkey(hotkey_str:str):
+    subprocess.call(['xdotool', 'key', hotkey_str])
+
+
+class DiscordWidget(Widget):
+    def __init__(self, board:Board, style:ButtonStyle=ButtonStyle(**pinks)):
+        super().__init__(board, style)
+        self.toggle_mute_button = Button(self.create_send_mute_keystroke_button(), text='Discord\nToggle\nMute', style=style)
+        self.muted = False
+
+    def create_send_mute_keystroke_button(self):
+        def send_mute_keystroke(pressed:bool):
+            if not pressed:
+                return
+            with activate_window('discord'):
+                send_hotkey('ctrl+shift+m')
+            self.muted = not self.muted
+            self.toggle_mute_button.set(text='Discord\n(Muted)' if self.muted else 'Discord\nUnmuted')
+        return send_mute_keystroke
+
+
 class VolumeWidget(Widget):
     increase_volume_button: Button
     decrease_volume_button: Button
     display_volume_button: Button
     muted: bool
     volume: str
+    mixer: alsaaudio.Mixer
+    _thread: threading.Thread
     def __init__(self, board:Board, style:ButtonStyle=ButtonStyle()):
         super().__init__(board, style)
+        self.mixer = alsaaudio.Mixer()
         self.volume = self.get_current_volume()
-        self.muted = self.is_muted()
+        self.muted = self.getmute()
         self.display_volume_button = Button(self.create_mute_fn(), style=style)
         self.set_volume_str()
         self.increase_volume_button = Button(
@@ -50,10 +99,36 @@ class VolumeWidget(Widget):
             self.create_change_volume_fn(self.display_volume_button, decrease=True),
             text="Vol-", style=style
         )
+        self._thread = threading.Thread(target=self.watch_volume, daemon=True)
+        self._thread.start()
 
-    def set_volume_str(self):
-        volume = self.get_current_volume()
-        muted = self.muted
+    def watch_volume(self):
+        pactl = subprocess.Popen(['pactl', 'subscribe'], stdout=subprocess.PIPE)
+        sink_events = subprocess.Popen(['grep', '--line-buffered', 'sink'], stdin=pactl.stdout, stdout=subprocess.PIPE)
+        last_volume = 0
+        last_muted = 0
+        while True:
+            line = sink_events.stdout.readline()
+            if not line:
+                time.sleep(0.1)
+                continue
+            volume = self.get_current_volume()
+            muted = self.getmute()
+            if volume == last_volume and muted == last_muted:
+                continue
+            last_volume = volume
+            last_muted = muted
+            self.set_volume_str(volume, muted)
+
+
+    def set_volume_str(self, volume=None, muted=None):
+        if volume is None:
+            volume = self.get_current_volume()
+        volume = f'{volume}%'
+
+        if muted is None:
+            muted = self.getmute()
+
         text = f'muted\n({volume})' if muted else volume
         self.display_volume_button.set(text=text)
 
@@ -61,12 +136,9 @@ class VolumeWidget(Widget):
         def toggle_mute(pressed):
             if not pressed:
                 return
-            subprocess.check_output(
-                "amixer set 'Master' {}mute".format('un' if self.muted else ''),
-                shell=True,
-            )
             self.muted = not self.muted
-            self.set_volume_str()
+            self.mixer.setmute(1 if self.muted else 0)
+            self.set_volume_str(muted=self.muted)
         return toggle_mute
 
 
@@ -90,20 +162,34 @@ class VolumeWidget(Widget):
         ).decode().strip()
         return '[off]' in value
 
-    @staticmethod
-    def get_current_volume():
-        value = subprocess.check_output(
-            f"amixer set 'Master' 0%- | grep Right --color=never | tail -1",
-            shell=True,
-        ).decode().strip()
-        return value.split('[')[1].split(']')[0]
+    def get_current_volume(self):
+        while self.mixer.handleevents():
+            pass
+        return self.mixer.getvolume()[0]
 
+    def getmute(self):
+        return self.is_muted()
+        # while self.mixer.handleevents():
+        #     pass
+        # mute = bool(self.mixer.getmute()[0])
+        # print("mute", mute)
+        # return mute
+
+def playpause(pressed:bool):
+    if not pressed:
+        return
+    print("pyautogui.press('playpause')")
+    pyautogui.press('playpause')
 
 class MediaControlWidget(Widget):
     def __init__(self):
-        self.prevtrack = Button(lambda pressed: pyautogui.press('prevtrack') if pressed else None, text='<')
-        self.playpause = Button(lambda pressed: pyautogui.press('playpause') if pressed else None, text='>||')
-        self.nexttrack = Button(lambda pressed: pyautogui.press('nexttrack') if pressed else None, text='>')
+        # self.prevtrack = Button(lambda pressed: pyautogui.press('prevtrack') if pressed else None, text='<')
+        bs = ButtonStyle(**greens)
+        self.prevtrack = Button(lambda pressed: pyautogui.press('left') if pressed else None, text='<', style=bs)
+        self.playpause = Button(playpause, text='>||', style=bs)
+        # self.nexttrack = Button(lambda pressed: pyautogui.press('nexttrack') if pressed else None, text='>', style=bs)
+        self.nexttrack = Button(lambda pressed: pyautogui.press('right') if pressed else None, text='>', style=bs)
+        self.full_screen = Button(lambda pressed: pyautogui.press('f') if pressed else None, text='[>F<]', style=bs)
 
 
 class BrightnessWidget(Widget):
@@ -119,12 +205,12 @@ class BrightnessWidget(Widget):
         self.brightness_display_button = Button(style=style)
         self.set_brightness_str()
         self.brightness_up_button = Button(
-            self.make_change_brightness_down_callback(),
-            text='Lite-', style=style,
+            self.make_change_brightness_up_callback(),
+            text='Lite+', style=ButtonStyle(image_path=get_asset_path('lightbulb_on.jpg')),
         )
         self.brightness_down_button = Button(
-            self.make_change_brightness_up_callback(),
-            text='Lite+', style=style,
+            self.make_change_brightness_down_callback(),
+            text='Lite-', style=ButtonStyle(image_path=get_asset_path('lightbulb_off.jpg')),
         )
 
     def set_brightness_str(self):
@@ -220,10 +306,10 @@ class NumPadWidget(Widget):
     def __init__(self, board:Board, style:ButtonStyle):
         self.entries = []
         self.number_buttons: Dict[int, Button] = dict()
-        self.spool_display_widget = Button(text='0', style=style)
-        self.bvalue = Button(text='0', style=style)
+        self.spool_display_widget = Button(text='0')#, style=style)
+        self.bvalue = Button(text='0')#, style=style)
         for i in range(10):
-            self.number_buttons[i] = Button(self.create_number_button_callback(i), text=str(i), style=style)
+            self.number_buttons[i] = Button(self.create_number_button_callback(i), text=str(i))#, style=style)
 
     def create_number_button_callback(self, number:int):
         def press_number_button(pressed:bool):
@@ -244,6 +330,31 @@ class NumPadWidget(Widget):
         return ''.join(str(v) for v in self.entries)
 
 
+class VSCodeWidget(Widget):
+    vsdlib: Button
+    dashboard: Button
+    some_style = ButtonStyle(background_color='#37d495', pressed_background_color='#297858')
+
+    def __init__(self, board:Board, style:ButtonStyle=ButtonStyle()):
+        super().__init__(board, self.some_style)
+
+        self.vscode = Button(self.create_vscode_button_callback(), text='VSCode', style=ButtonStyle(**blues))
+        self.vsdlib = Button(self.create_vscode_button_callback('/home/violet/git/violet/vsdlib'), text='Stream\nDeck', style=style)
+        self.dashboard = Button(self.create_vscode_button_callback('/home/violet/git/violet/dashboard'), text='Web\nDashboard', style=style)
+
+    def create_vscode_button_callback(self, directory:Optional[str]=None):
+        def vscode_dir(pressed:bool):
+            if not pressed:
+                return
+            args = ['/usr/bin/code', '--vmodule="*/components/os_crypt/*=1"']
+            if directory is not None:
+                args.append(directory)
+            cmd = ' '.join(args)
+            cmd = f'pwd; nohup bash -c {cmd} >> nohup_vscode.txt &'
+            subprocess.call(cmd, shell=True)
+        return vscode_dir
+
+
 class CalculatorWidget(NumPadWidget):
     #TODO:merge to a number_buttons list and index by the number you want, e.g. number_buttons[0] will be the 0 button.
     bplus: Button
@@ -254,11 +365,15 @@ class CalculatorWidget(NumPadWidget):
     bbackspace: Button
     result_style = ButtonStyle(background_color='#37d495', pressed_background_color='#297858')
     def __init__(self, board:Board, style:ButtonStyle=ButtonStyle()):
-        super().__init__(board, self.result_style)
-
-        self.bdecimal = Button(self.create_operation_button_callback('.'), text='.', style=style)
+        # super().__init__(board, self.result_style)
+        super().__init__(board, style)
 
         operator_style = ButtonStyle(**grays)
+        self.bdecimal = Button(self.create_operation_button_callback('.'), text='.', style=operator_style)
+
+        self.pleft = Button(self.create_operation_button_callback('('), text='(', style=operator_style)
+        self.pright = Button(self.create_operation_button_callback(')'), text=')', style=operator_style)
+
         self.bplus = Button(self.create_operation_button_callback('+'), text='+', style=operator_style)
         self.bminus = Button(self.create_operation_button_callback('-'), text='-', style=operator_style)
         self.bmult = Button(self.create_operation_button_callback('*'), text='*', style=operator_style)
@@ -355,6 +470,7 @@ def check_device_connected(mac):
 
 
 class BluetoothWidget(Widget):
+    _thread: threading.Thread
 
     def __init__(self, board:Board, style:ButtonStyle=ButtonStyle()):
         super().__init__(board, style)

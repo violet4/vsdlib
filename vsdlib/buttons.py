@@ -1,12 +1,17 @@
 import inspect
 import functools
 from typing import Optional, Callable, List
+import logging
 
 
 from StreamDeck.Devices.StreamDeck import StreamDeck
 
-from .images import generate_text_image, generate_emoji_image
+from .images import generate_text_image, generate_emoji_image, load_button_image
 from .button_style import ButtonStyle
+
+logger = logging.getLogger(__name__)
+logger.setLevel(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 
 
 class Button:
@@ -58,7 +63,7 @@ class Button:
                 try:
                     return fn(**new_kwargs)
                 except Exception as e:
-                    print(f"Button function {fn} failed; error:", e)
+                    logger.exception(f"Button function {fn} failed; error: {e}")
             return wrapped
         return wrapper
 
@@ -135,14 +140,29 @@ class Button:
             background_color = self.style.pressed_background_color
         else:  # elif not self.pressed:
             background_color = self.style.background_color
-        sd.set_key_image(
-            index,
-            generate_text_image(
-                background_color,
-                self.style,
-                self.text,
-            ),
-        )
+
+        image_set = False
+        if self.style.image_path is not None:
+            try:
+                bi = load_button_image(self.style.image_path, self.style.size, 90)
+                sd.set_key_image(
+                    index, bi
+                )
+                image_set = True
+            except:
+                logger.exception(
+                    f"Failed to set button image from file path "
+                    f"'{self.style.image_path}'. Falling back on text-based button."
+                )
+        if not image_set:
+            sd.set_key_image(
+                index,
+                generate_text_image(
+                    background_color,
+                    self.style,
+                    self.text,
+                ),
+            )
 
     def reset(
         self,
@@ -181,7 +201,6 @@ class EmojiButton(Button):
                 self.text,
             ),
         )
-
 
 
 class ButtonSlot:

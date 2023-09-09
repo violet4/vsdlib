@@ -12,6 +12,7 @@ pyqt5 = "*"
 pyautogui = "*"
 emoji = "*"
 sqlalchemy = "*"
+pyalsaaudio = "*"
 
 [dev-packages]
 ipdb = "*"

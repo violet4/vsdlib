@@ -75,7 +75,7 @@ class BoardLayout:
 
         new_layout.set(return_button, 0)
         new_page_button = new_layout.create_return_button(board, to_text, style=style)
-        return new_layout, new_page_button
+        return new_layout, new_page_button, return_button
 
 
 class Board:

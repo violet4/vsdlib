@@ -5,20 +5,27 @@ from typing import Dict, Optional, Tuple, Callable, List
 from PIL.ImageDraw import Draw
 from PIL.Image import Image, new as new_image
 from PIL.ImageFont import truetype, FreeTypeFont
+from PIL import Image as PILImage
 
 from .button_style import ButtonStyle
 from .colors import light_purple
 
 
 emoji_font_filepath = os.path.join('Noto_Color_Emoji', 'NotoColorEmoji-Regular.ttf')
+assets_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets')
+
+def get_asset_path(filename:str):
+    return os.path.join(assets_folder, filename)
 
 
-
-def img_to_bytes(img:Image):
+def img_to_bytes(img:Image) -> bytes:
     buf = io.BytesIO()
     img.rotate(180).save(buf, format='JPEG', quality=100, subsampling=0)
     return buf.getvalue()
 
+
+def rotate_image(image: Image, degrees: int) -> Image:
+    return image.rotate(-degrees)  # Negative degree for clockwise rotation
 
 # @functools.lru_cache
 def generate_text_image(
@@ -43,13 +50,18 @@ def generate_text_image(
         font = truetype('SourceCodePro-Regular.otf', size=font_size)
         # font = truetype(emoji_font_filepath, size=font_size)
         # font = truetype('NotoColorEmoji.ttf', size=109)
-        _, _, textwidth, textheight = draw.textbbox((0, 0), text, font)
+        try:
+            _, _, textwidth, textheight = draw.textbbox((0, 0), text, font)
+        except Exception as e:
+            print(e, text, font)
+            raise
         text_fits = textwidth <= width and textheight <= height
         font_size -= 1
 
     x = (width - textwidth) / 2
     y = (height - textheight) / 2
     draw.text((x, y), text, font=font, fill=style.text_color)
+    img = rotate_image(img, 90)
     return img_to_bytes(img)
 
 
@@ -71,3 +83,17 @@ def generate_emoji_image(
     y = (height - textheight) / 2
     draw.text((x, y), text, font=font, fill=style.text_color)
     return img_to_bytes(img)
+
+
+def load_button_image(filepath:str, size:Tuple[int,int], rotate:int=0) -> bytes:
+    image = PILImage.open(filepath)
+    N, M = size # Sample values
+    image_resized = image.resize((N, M))
+    buffer = io.BytesIO()
+    image_resized.save(buffer, format="JPEG")
+    image_jpeg = PILImage.open(buffer)
+    image_rotated = image_jpeg.rotate(rotate, expand=True)
+    final_buffer = io.BytesIO()
+    image_rotated.save(final_buffer, format="JPEG")
+    image_bytes = final_buffer.getvalue()
+    return image_bytes
