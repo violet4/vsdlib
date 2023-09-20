@@ -10,6 +10,26 @@ from .button_style import ButtonStyle
 from .buttons import Button, ButtonSlot
 from .colors import black, reds, blues, greens, grays
 
+def retry(max_count=20, seconds=1):
+    """
+    if stream deck is started at login, the process that starts it may not have
+    full access to the system yet including the windowing system. this allows
+    it to try for a while without permanently failing.
+    """
+    def wrapper(fn):
+        def wrapped(*args, **kwargs):
+            count = 0
+            while count < max_count:
+                count += 1
+                try:
+                    return fn(*args, **kwargs)
+                except Exception as e:
+                    print(e)
+                    time.sleep(seconds)
+            print(f"Failed after {max_count} tries with {seconds} seconds between each try..")
+        return wrapped
+    return wrapper
+
 
 class BoardLayout:
     positions: Dict[int, Button]
@@ -116,6 +136,8 @@ class Board:
             self.dm = DeviceManager()
             self.sd: StreamDeck = self.dm.enumerate()[0]
             self.sd.open()
+
+            self.sd.set_brightness = retry(10)(self.sd.set_brightness)
             self.sd.set_brightness(self.brightness)
 
         self.key_count = self.sd.key_count()

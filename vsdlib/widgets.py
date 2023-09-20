@@ -2,29 +2,16 @@ from typing import Dict, Optional, Tuple, Callable, List
 import subprocess
 import time
 import threading
-
-import pyautogui as pag
-import pyautogui
+import datetime
 
 import alsaaudio
 
 from .board import Board, BoardLayout
 from .buttons import Button, EmojiButton
 from .button_style import ButtonStyle
-from .colors import grays, greens, blues, reds, pinks
+from .colors import grays, greens, blues, reds, pinks, whites
 from .contrib.todos import Todo, Session
 from .images import get_asset_path
-
-
-#TODO:make this smarter based on platform..
-mappings = {
-    'prevtrack': 173,
-    'playpause': 172,
-    'nexttrack': 171,
-}
-for k, v in mappings.items():
-    if not pyautogui._pyautogui_x11.keyboardMapping.get(k): # type: ignore
-        pyautogui._pyautogui_x11.keyboardMapping[k] = v # type: ignore
 
 
 class Widget:
@@ -74,6 +61,34 @@ class DiscordWidget(Widget):
             self.muted = not self.muted
             self.toggle_mute_button.set(text='Discord\n(Muted)' if self.muted else 'Discord\nUnmuted')
         return send_mute_keystroke
+
+
+class ClockWidget(Widget):
+    def __init__(self, board:Board, style:ButtonStyle=ButtonStyle(**whites)):
+        super().__init__(board, style)
+        self.clock_button = Button(lambda *args, **kwargs: None, style=style)
+        self.clock_thread = threading.Thread(target=self.keep_clock_updated, daemon=True)
+        self.clock_thread.start()
+
+    def keep_clock_updated(self):
+        dow_lookup = {
+            0: 'M',
+            1: 'T',
+            2: 'W',
+            3: 'R',
+            4: 'F',
+            5: 'S',
+            6: 'U',
+        }
+        while True:
+            now = datetime.datetime.now()
+            dow = dow_lookup[now.weekday()]
+            self.clock_button.set(text=now.strftime(
+                f'%H:%M:%S\n'      # 8
+                f' %m-%d{dow}\n'   # 6
+                f'  %Y'            # 4
+            ))
+            time.sleep(1)
 
 
 class VolumeWidget(Widget):
@@ -175,21 +190,29 @@ class VolumeWidget(Widget):
         # print("mute", mute)
         # return mute
 
-def playpause(pressed:bool):
-    if not pressed:
-        return
-    print("pyautogui.press('playpause')")
-    pyautogui.press('playpause')
+
+def create_try_playerctl_command(command:str='play-pause'):
+    def try_playerctl_command(pressed:bool):
+        if not pressed:
+            return
+        try:
+            subprocess.call(['playerctl', command])
+        except Exception as e:
+            pass
+    return try_playerctl_command
+
+
+playpause = create_try_playerctl_command()
+prevtrack = create_try_playerctl_command('previous')
+nexttrack = create_try_playerctl_command('next')
+
 
 class MediaControlWidget(Widget):
     def __init__(self):
-        # self.prevtrack = Button(lambda pressed: pyautogui.press('prevtrack') if pressed else None, text='<')
         bs = ButtonStyle(**greens)
-        self.prevtrack = Button(lambda pressed: pyautogui.press('left') if pressed else None, text='<', style=bs)
+        self.prevtrack = Button(prevtrack, text='<', style=bs)
         self.playpause = Button(playpause, text='>||', style=bs)
-        # self.nexttrack = Button(lambda pressed: pyautogui.press('nexttrack') if pressed else None, text='>', style=bs)
-        self.nexttrack = Button(lambda pressed: pyautogui.press('right') if pressed else None, text='>', style=bs)
-        self.full_screen = Button(lambda pressed: pyautogui.press('f') if pressed else None, text='[>F<]', style=bs)
+        self.nexttrack = Button(nexttrack, text='>', style=bs)
 
 
 class BrightnessWidget(Widget):

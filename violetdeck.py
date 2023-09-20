@@ -14,7 +14,10 @@ import time
 import asyncio
 import subprocess
 
-from vsdlib.widgets import VolumeWidget, BrightnessWidget, MediaControlWidget, DiscordWidget
+from vsdlib.widgets import (
+    VolumeWidget, BrightnessWidget, MediaControlWidget, DiscordWidget,
+    ClockWidget
+)
 from vsdlib.board import Board, BoardLayout
 from vsdlib.buttons import Button, ButtonStyle
 from vsdlib.colors import reds, oranges, yellows, greens, blues, purples, black, pinks, indigos, violets
@@ -97,7 +100,7 @@ async def run_main():
     volume_widget = VolumeWidget(board, style=ButtonStyle(**oranges))
     media_control_widget = MediaControlWidget()
     discord_widget = DiscordWidget(board, style=ButtonStyle(**pinks))
-
+    clock_widget = ClockWidget(board)
 
     discord_image_path = get_asset_path('discord-logo.jpg')
     joplin_image_path = get_asset_path('joplin.jpg')
@@ -105,7 +108,8 @@ async def run_main():
     thunar_image_path = get_asset_path('thunar.jpg')
     keepassxc_image_path = get_asset_path('KeePassXC.jpg')
     terminal_image_path = get_asset_path('Terminal.jpg')
-    betterbird_image_path = get_asset_path('betterbird.jpg')
+    # betterbird_image_path = get_asset_path('betterbird.jpg')
+    betterbird_image_path = get_asset_path('mail.jpg')
 
     discord_button = Button(activate_discord, text="Discord", style=ButtonStyle(**pinks, image_path=discord_image_path))
     joplin_button = Button(activate_joplin, text="Joplin", style=ButtonStyle(**pinks, image_path=joplin_image_path))
@@ -120,19 +124,20 @@ async def run_main():
     minecraft_button = Button(activate_minecraft, style=ButtonStyle(image_path=get_asset_path('minecraft.jpg')))
 
     # main page top bar - x,0
-    main_layout.set(position_layout.button, 0)
-    main_layout.set(calc.button, 1)
-    main_layout.set(bluetooth.button, 2)
+    main_layout.set(position_layout.button, 0, 0)
+    main_layout.set(calc.button,  3, 0)
+    main_layout.set(bluetooth.button, 2, 0)
+    main_layout.set(minimize_button,      1, 0)
 
     # main_layout.set(TODO.button, 4)
-    main_layout.set(create_restart_button(board, style=ButtonStyle(**reds, image_path=get_asset_path('restart.jpg'))), 7)
-    main_layout.set(board.debug_button, 6)
+    main_layout.set(create_restart_button(board, style=ButtonStyle(**reds, image_path=get_asset_path('restart.jpg'))), 7, 0)
+    main_layout.set(board.debug_button, 6, 0)
 
     # second row - x,1
 
     pp = media_control_widget.playpause
     back = media_control_widget.prevtrack
-    fullscreen = media_control_widget.full_screen
+    # fullscreen = media_control_widget.full_screen
     forward = media_control_widget.nexttrack
 
     brightness = brightness_widget.brightness_display_button
@@ -147,11 +152,11 @@ async def run_main():
 
     main_layout.set(toggle_mute,         7, 1)
     # main_layout.set(emoji_pad.button,    7, 2)
+    main_layout.set(clock_widget.clock_button,   7, 2)
     main_layout.set(alphabet,            7, 3)
 
     # main_layout.set(atimelogger.button,  6, 2)
 
-    main_layout.set(minimize_button,     3, 0)
     main_layout.set(vscode.button,       3, 1)
     main_layout.set(terminal_button,     3, 2)
     main_layout.set(keepass_button,      3, 3)

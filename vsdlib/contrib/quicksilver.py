@@ -16,35 +16,49 @@ def get_application_ids(class_name):
     return subprocess.Popen(['xdotool', 'search', '--class', class_name], stdout=subprocess.PIPE)
 
 def activate_application(class_name) -> Success:
-    xdotool_ids = get_application_ids(class_name).communicate()[0].decode().strip()
+    xdotool_ids = get_application_ids(class_name).communicate()[0].decode().strip().split('\n')
     if not xdotool_ids:
         return Success(False)
+
+    for xdotool_id in xdotool_ids:
+        subprocess.check_output(
+            ['xdotool', 'windowactivate', xdotool_id],
+        )
 
     xdotool_ids = get_application_ids(class_name)
     open_windows = subprocess.Popen(['bash', '-c', """
         while read window_id ; do xdotool windowactivate $window_id ; done
     """], stdin=xdotool_ids.stdout)
     open_windows.communicate()
+    print(f"open_windows.returncode {open_windows.returncode}")
     return Success(open_windows.returncode==0)
 
-
-def activate_terminal():
-    return activate_application('xfce4-terminal')
 
 def create_activate_application(app_name:Union[str, List[str]], binary_path:str):
     app_names = [app_name] if isinstance(app_name, str) else app_name
 
-    def new_activate_application():
+    def new_activate_application(pressed:bool):
+        if not pressed:
+            return
         for aname in app_names:
-            success = activate_application(aname)
-            if success:
+            print(f"trying to activate app name: {aname}")
+            success = Success(False)
+            try:
+                success = activate_application(aname)
+            except Exception as e:
+                print(f"Failed to activate {aname}: {e}")
+            print(f"success: {success} {success.value} bool(success) {bool(success)}")
+            if bool(success):
+                print(f"success={success}?.. returning..")
                 return
+        print(f"beginning {binary_path}")
         subprocess.call(f"""
-            pwd; nohup bash -c {binary_path} &
+            nohup bash -c {binary_path} &
         """, shell=True)
     return new_activate_application
 
 
+activate_terminal = create_activate_application('xfce4-terminal', '/usr/bin/xfce4-terminal')
 activate_gimp = create_activate_application('gimp', '/usr/bin/gimp')
 activate_thunderbird = create_activate_application('betterbird', '/home/violet/Downloads/betterbird/betterbird/betterbird')
 activate_firefox = create_activate_application('firefox', '/usr/bin/firefox-bin')
