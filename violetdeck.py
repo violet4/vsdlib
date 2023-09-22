@@ -62,9 +62,25 @@ def do_if_pressed(fn):
 def setup_audio_compression():
     subprocess.call(
         """
+        # ensure that if we already had a sink that we remove it. ignore errors.
         pactl unload-module module-ladspa-sink 2>/dev/null
         sleep 1
-        pactl load-module module-ladspa-sink sink_name=compressed master=alsa_output.usb-Focusrite_Scarlett_Solo_USB_Y7M9PQH13C294A-00.analog-stereo plugin=fast_lookahead_limiter_1913 label=fastLookaheadLimiter control=5,-15,0.3
+
+        # figure out which output device we're currently using
+        audio_ID=$(pactl list sinks short | awk '$7 == "RUNNING" {print $2}')
+
+        # create a new virtual compressed audio device
+        pactl load-module module-ladspa-sink sink_name=compressed master=$audio_ID plugin=fast_lookahead_limiter_1913 label=fastLookaheadLimiter control=5,-15,0.3
+        # grab the ID of the new sink we just created
+        compressed_sink_index=$(pactl list sinks short | awk '/compressed/ {print $1}')
+
+        # move all existing audio streams to the new sink. this will
+        # throw an error "Failure: Invalid argument" because you can't move
+        # the compression output to itself.
+        pactl list sink-inputs short | awk '{print $1}' | xargs -I {} pactl move-sink-input {} $compressed_sink_index
+
+        # exit cleanly
+        exit 0
         """,
         shell=True,
     )
