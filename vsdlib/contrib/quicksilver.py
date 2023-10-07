@@ -1,7 +1,11 @@
-from typing import Union, List
+from typing import Union, List, Dict, Optional, Any
 
 
 import subprocess
+
+options: Dict[str, Optional[Any]] = {
+    'environment_file': None,
+}
 
 
 class Success:
@@ -35,6 +39,9 @@ def activate_application(class_name) -> Success:
 
 
 def create_activate_application(app_name:Union[str, List[str]], binary_path:str):
+    """
+    never pass untrusted user input to binary_path
+    """
     app_names = [app_name] if isinstance(app_name, str) else app_name
 
     def new_activate_application(pressed:bool):
@@ -51,10 +58,23 @@ def create_activate_application(app_name:Union[str, List[str]], binary_path:str)
             if bool(success):
                 print(f"success={success}?.. returning..")
                 return
+
+        # secure method would ensure binary_path exists.. but also needs to check for spaces and - for user trying to splice in command-line arguments
         print(f"beginning {binary_path}")
-        subprocess.call(f"""
-            nohup bash -c {binary_path} &
-        """, shell=True)
+        nohup_wrapper = 'nohup bash -c {} &'
+        wrapped_command = nohup_wrapper.format(binary_path)
+
+        full_command = ""
+        if options['environment_file'] is not None:
+            source_env_file = 'source {} ; '.format(options['environment_file'])
+            full_command = f"{source_env_file}{wrapped_command}"
+        else:
+            fresh_environment = "env -i DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY "
+            full_command = f"{fresh_environment}{wrapped_command}"
+
+        subprocess.call(full_command, shell=True)
+
+
     return new_activate_application
 
 

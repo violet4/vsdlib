@@ -13,6 +13,9 @@ import os
 import time
 import asyncio
 import subprocess
+import argparse
+from typing import Optional
+import logging
 
 from vsdlib.widgets import (
     VolumeWidget, BrightnessWidget, MediaControlWidget, DiscordWidget,
@@ -33,6 +36,12 @@ from vsdlib.contrib.quicksilver import (
     minimize_current_window, activate_joplin,
     activate_discord, activate_gimp, activate_minecraft
 )
+from vsdlib.contrib import quicksilver
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(level=logging.INFO)
+
 
 def create_restart_button(board:Board, style:ButtonStyle=ButtonStyle()):
     def restart_streamdeck():
@@ -161,12 +170,12 @@ async def run_main():
     brighten = brightness_widget.brightness_up_button
 
     volume = volume_widget.display_volume_button
-    toggle_mute = discord_widget.toggle_mute_button
+    toggle_discord_mute = discord_widget.toggle_mute_button
     louder = volume_widget.increase_volume_button
     quieter = volume_widget.decrease_volume_button
     alphabet = alphabet_layout.button
 
-    main_layout.set(toggle_mute,         7, 1)
+    main_layout.set(toggle_discord_mute,         7, 1)
     # main_layout.set(emoji_pad.button,    7, 2)
     main_layout.set(clock_widget.clock_button,   7, 2)
     main_layout.set(alphabet,            7, 3)
@@ -175,13 +184,13 @@ async def run_main():
 
     main_layout.set(vscode.button,       3, 1)
     main_layout.set(terminal_button,     3, 2)
-    main_layout.set(keepass_button,      3, 3)
+    main_layout.set(firefox_button,      3, 3)
     # main_layout.set(timer.button,        5, 3)
 
     main_layout.set(recur_tasks.button, 4, 0)
     main_layout.set(minecraft_button,     4, 1)
     main_layout.set(gimp_button,     4, 2)
-    main_layout.set(firefox_button,     4, 3)
+    main_layout.set(keepass_button,     4, 3)
     main_layout.set(audio_compress_button,        5, 0)
     main_layout.set(thunar_button,     5, 2)
 
@@ -238,8 +247,26 @@ def ignore_errors(fn):
     return wrapped
 
 
+class Namespace(argparse.Namespace):
+    environment_file: Optional[str]
+
+
+def parse_arguments() -> Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--environment-file', default=None)
+    pargs = parser.parse_args(namespace=Namespace())
+    return pargs
+
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
+    pargs = parse_arguments()
+    if pargs.environment_file is not None:
+        logger.debug("received environment file '%s'", pargs.environment_file)
+        quicksilver.options['environment_file'] = pargs.environment_file
+    else:
+        logger.debug('received no env file')
+
     # sess = requests.Session()
     # resp: requests.Response = sess.get('https://camelcamelcamel.com/product/B07RL8H55Z?active=watch')
     # bs = BeautifulSoup(resp.content, 'html.parser')
@@ -256,4 +283,3 @@ if __name__ == '__main__':
     init_ok = loop.run_until_complete(run_main())
     if init_ok:
         loop.run_forever()
-
