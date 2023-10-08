@@ -2,6 +2,11 @@ from typing import Union, List, Dict, Optional, Any
 
 
 import subprocess
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(level=logging.DEBUG)
+
 
 options: Dict[str, Optional[Any]] = {
     'environment_file': None,
@@ -72,6 +77,7 @@ def create_activate_application(app_name:Union[str, List[str]], binary_path:str)
             fresh_environment = "env -i DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY "
             full_command = f"{fresh_environment}{wrapped_command}"
 
+        logger.debug('attempting command: %s', full_command)
         subprocess.call(full_command, shell=True)
 
 
@@ -85,6 +91,7 @@ activate_firefox = create_activate_application('firefox', '/usr/bin/firefox-bin'
 activate_thunar = create_activate_application('thunar', '/usr/bin/thunar')
 activate_joplin = create_activate_application('joplin', '/home/violet/Downloads/Joplin-2.11.11.AppImage')
 activate_discord = create_activate_application('discord', '/usr/bin/discord')
+activate_pavucontrol = create_activate_application('pavucontrol', '/usr/bin/pavucontrol')
 activate_minecraft = create_activate_application(['minecraft', 'ATLauncher'], '/usr/bin/ATLauncher')
 
 

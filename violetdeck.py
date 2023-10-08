@@ -32,7 +32,7 @@ from vsdlib.images import get_asset_path
 
 from vsdlib.contrib.quicksilver import (
     activate_terminal, activate_thunderbird, activate_firefox,
-    activate_thunar,
+    activate_thunar, activate_pavucontrol,
     minimize_current_window, activate_joplin,
     activate_discord, activate_gimp, activate_minecraft
 )
@@ -47,7 +47,9 @@ def create_restart_button(board:Board, style:ButtonStyle=ButtonStyle()):
     def restart_streamdeck():
         print("RESTARTING!!!!!!!")
         board.close()
-        os.system('pipenv run python violetdeck.py')
+        env_file = quicksilver.options['environment_file']
+        env_file = f'--environment-file "{env_file}"' if env_file else ''
+        os.system(f'cd /home/violet/git/violet/vsdlib/ ; pipenv run python violetdeck.py {env_file}')
         # self.shutdown = True
     button: Button = Button(
         restart_streamdeck,
@@ -147,6 +149,7 @@ async def run_main():
     audio_compress_button = Button(do_if_pressed(setup_audio_compression), text="Audio\nCompress", style=ButtonStyle(image_path=get_asset_path('audio_compress.jpg')))
     gimp_button = Button(activate_gimp, style=ButtonStyle(image_path=get_asset_path('gimp.jpg')))
     minecraft_button = Button(activate_minecraft, style=ButtonStyle(image_path=get_asset_path('minecraft.jpg')))
+    pavucontrol_button = Button(activate_pavucontrol, style=ButtonStyle(image_path=get_asset_path('pulseaudio.jpg')))
 
     # main page top bar - x,0
     main_layout.set(position_layout.button, 0, 0)
@@ -185,7 +188,7 @@ async def run_main():
     main_layout.set(vscode.button,       3, 1)
     main_layout.set(terminal_button,     3, 2)
     main_layout.set(firefox_button,      3, 3)
-    # main_layout.set(timer.button,        5, 3)
+    main_layout.set(pavucontrol_button,        5, 3)
 
     main_layout.set(recur_tasks.button, 4, 0)
     main_layout.set(minecraft_button,     4, 1)
