@@ -1,8 +1,12 @@
 from typing import Union, List, Dict, Optional, Any
 
-
 import subprocess
 import logging
+import stat
+from contextlib import contextmanager
+import tempfile
+import os
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.DEBUG)
@@ -21,26 +25,51 @@ class Success:
         return self.value
 
 
-def get_application_ids(class_name):
+def get_application_ids(class_name:str):
     return subprocess.Popen(['xdotool', 'search', '--class', class_name], stdout=subprocess.PIPE)
 
-def activate_application(class_name) -> Success:
-    xdotool_ids = get_application_ids(class_name).communicate()[0].decode().strip().split('\n')
+def activate_application(class_name:str) -> Success:
+    # commit: fix: application activation: properly handle when no matching windows returns [''] (previously broke things)
+    xdotool_ids = list(filter(None, get_application_ids(class_name).communicate()[0].decode().strip().split('\n')))
     if not xdotool_ids:
         return Success(False)
 
+    #TODO:what's h appening here? why do we do this work multiple times? don't want to deal with it right this moment :p
     for xdotool_id in xdotool_ids:
-        subprocess.check_output(
+        retcode = subprocess.call(
             ['xdotool', 'windowactivate', xdotool_id],
         )
+        #TODO:?
+        if retcode == 0:
+            break
 
     xdotool_ids = get_application_ids(class_name)
-    open_windows = subprocess.Popen(['bash', '-c', """
+    open_windows_process = subprocess.Popen(['bash', '-c', """
         while read window_id ; do xdotool windowactivate $window_id ; done
     """], stdin=xdotool_ids.stdout)
-    open_windows.communicate()
-    print(f"open_windows.returncode {open_windows.returncode}")
-    return Success(open_windows.returncode==0)
+    open_windows_process.communicate()
+    print(f"open_windows.returncode {open_windows_process.returncode}")
+    return Success(open_windows_process.returncode==0)
+
+
+@contextmanager
+def mkstemp(*args, delete:bool=True, **kwargs):
+    fd, exe_filepath = tempfile.mkstemp(*args, **kwargs)
+    yield fd, exe_filepath
+    if delete:
+        os.remove(exe_filepath)
+
+
+def construct_exe_file_contents(binary_path:str):
+    env_setup = ''
+    if options['environment_file'] is not None:
+        # grab environment from the environment file our parent process created
+        env_setup = 'source "{}"\n'.format(options['environment_file'])
+    else:
+        # fresh environment
+        env_setup = "env -i DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY "
+    exe_file_contents = f"{env_setup}{binary_path}"
+    return exe_file_contents
 
 
 def create_activate_application(app_name:Union[str, List[str]], binary_path:str):
@@ -53,33 +82,36 @@ def create_activate_application(app_name:Union[str, List[str]], binary_path:str)
         if not pressed:
             return
         for aname in app_names:
-            print(f"trying to activate app name: {aname}")
+            #commit:ensure we're using `logging` module instead of printing everywhere
+            logger.debug(f"trying to activate app name: {aname}")
             success = Success(False)
             try:
                 success = activate_application(aname)
             except Exception as e:
-                print(f"Failed to activate {aname}: {e}")
-            print(f"success: {success} {success.value} bool(success) {bool(success)}")
+                logger.error(f"Failed to activate {aname}: {e}")
+            logger.debug(f"success: {success} {success.value} bool(success) {bool(success)}")
             if bool(success):
-                print(f"success={success}?.. returning..")
+                logger.debug("success='%s'?.. returning..", success)
                 return
 
-        # secure method would ensure binary_path exists.. but also needs to check for spaces and - for user trying to splice in command-line arguments
-        print(f"beginning {binary_path}")
-        nohup_wrapper = 'nohup bash -c {} &'
-        wrapped_command = nohup_wrapper.format(binary_path)
+        #commit:use more reliable method of starting other applications (create a shell script and run it with nohup)
+        #TODO:secure method would ensure binary_path exists.. but also needs to check for spaces and - for user trying to splice in command-line arguments
+        exe_file_contents = construct_exe_file_contents(binary_path)
+        with mkstemp(suffix='vsdlib.sh', text=True, delete=False) as (fd, exe_filepath):
+            with open(fd, 'w') as fw:
+                print(exe_file_contents, file=fw)
 
-        full_command = ""
-        if options['environment_file'] is not None:
-            source_env_file = 'source {} ; '.format(options['environment_file'])
-            full_command = f"{source_env_file}{wrapped_command}"
-        else:
-            fresh_environment = "env -i DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY "
-            full_command = f"{fresh_environment}{wrapped_command}"
+            # make executable for this user
+            st = os.stat(exe_filepath)
+            os.chmod(exe_filepath, st.st_mode|stat.S_IXUSR)
 
-        logger.debug('attempting command: %s', full_command)
-        subprocess.call(full_command, shell=True)
-
+            nohup_wrapper = f'nohup bash "{exe_filepath}" &'
+            logger.debug(
+                'attempting command: binary_path, nohup_wrapper, exe_file_contents: *****\n%s\n*****\n%s\n*****\n%s\n*****',
+                binary_path, nohup_wrapper, exe_file_contents,
+            )
+            logger.debug("calling: %s", nohup_wrapper)
+            subprocess.call(nohup_wrapper, shell=True)
 
     return new_activate_application
 
