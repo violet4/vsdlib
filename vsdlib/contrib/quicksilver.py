@@ -94,7 +94,6 @@ def create_activate_application(app_name:Union[str, List[str]], binary_path:str)
                 logger.debug("success='%s'?.. returning..", success)
                 return
 
-        #commit:use more reliable method of starting other applications (create a shell script and run it with nohup)
         #TODO:secure method would ensure binary_path exists.. but also needs to check for spaces and - for user trying to splice in command-line arguments
         exe_file_contents = construct_exe_file_contents(binary_path)
         with mkstemp(suffix='vsdlib.sh', text=True, delete=False) as (fd, exe_filepath):
@@ -121,7 +120,8 @@ activate_gimp = create_activate_application('gimp', '/usr/bin/gimp')
 activate_thunderbird = create_activate_application('betterbird', '/home/violet/Downloads/betterbird/betterbird/betterbird')
 activate_firefox = create_activate_application('firefox', '/usr/bin/firefox-bin')
 activate_thunar = create_activate_application('thunar', '/usr/bin/thunar')
-activate_joplin = create_activate_application('joplin', '/home/violet/Downloads/Joplin-2.11.11.AppImage')
+activate_joplin = create_activate_application('joplin', '/home/violet/Downloads/Joplin-2.13.2.AppImage')
+activate_keepassxc = create_activate_application('keepassxc', '/usr/bin/keepassxc')
 activate_discord = create_activate_application('discord', '/usr/bin/discord')
 activate_pavucontrol = create_activate_application('pavucontrol', '/usr/bin/pavucontrol')
 activate_minecraft = create_activate_application(['minecraft', 'ATLauncher'], '/usr/bin/ATLauncher')

@@ -33,7 +33,7 @@ from vsdlib.images import get_asset_path
 from vsdlib.contrib.quicksilver import (
     activate_terminal, activate_thunderbird, activate_firefox,
     activate_thunar, activate_pavucontrol,
-    minimize_current_window, activate_joplin,
+    minimize_current_window, activate_joplin, activate_keepassxc,
     activate_discord, activate_gimp, activate_minecraft
 )
 from vsdlib.contrib import quicksilver
@@ -140,7 +140,7 @@ async def run_main():
 
     discord_button = Button(activate_discord, text="Discord", style=ButtonStyle(**pinks, image_path=discord_image_path))
     joplin_button = Button(activate_joplin, text="Joplin", style=ButtonStyle(**pinks, image_path=joplin_image_path))
-    keepass_button = Button(lambda: subprocess.call(['/usr/bin/keepassxc']), text="Kee\nPass\nXC", style=ButtonStyle(**pinks, image_path=keepassxc_image_path))
+    keepass_button = Button(activate_keepassxc, text="Kee\nPass\nXC", style=ButtonStyle(**pinks, image_path=keepassxc_image_path))
     terminal_button = Button(activate_terminal, text="Terminal", style=ButtonStyle(**pinks, image_path=terminal_image_path))
     thunderbird_button = Button(activate_thunderbird, text="BB", style=ButtonStyle(**pinks, image_path=betterbird_image_path))
     firefox_button = Button(activate_firefox, text="Firefox", style=ButtonStyle(**pinks, image_path=firefox_image_path))
@@ -152,10 +152,10 @@ async def run_main():
     pavucontrol_button = Button(activate_pavucontrol, style=ButtonStyle(image_path=get_asset_path('pulseaudio.jpg')))
 
     # main page top bar - x,0
-    main_layout.set(position_layout.button, 0, 0)
-    main_layout.set(calc.button,  3, 0)
-    main_layout.set(bluetooth.button, 2, 0)
-    main_layout.set(minimize_button,      1, 0)
+    main_layout.set(position_layout.button,  0, 0)
+    main_layout.set(calc.button,             3, 0)
+    main_layout.set(bluetooth.button,        1, 0)
+    main_layout.set(minimize_button,         2, 0)
 
     # main_layout.set(TODO.button, 4)
     main_layout.set(create_restart_button(board, style=ButtonStyle(**reds, image_path=get_asset_path('restart.jpg'))), 7, 0)
