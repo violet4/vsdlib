@@ -8,6 +8,13 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.11"
 streamdeck = { git = "git@github.com:abcminiuser/python-elgato-streamdeck.git", tag = "0.9.4" }
+pillow = "*"
+requests = "*"
+beautifulsoup4 = "*"
+pyqt5 = "5.15.2"
+emoji = "*"
+sqlalchemy = "*"
+pyalsaaudio = "*"
 
 
 [build-system]
