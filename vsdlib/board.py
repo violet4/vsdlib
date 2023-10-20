@@ -230,3 +230,17 @@ class Board:
 
     def sub_board(self):
         return Board(self.sd, self.dm)
+
+
+class SubLayout(BoardLayout):
+    def __init__(
+        self, board_name:str, board:Board, from_layout:BoardLayout,
+        button_style:ButtonStyle=ButtonStyle(**blues),
+    ):
+        super().__init__()
+        new_layout, button, return_button = from_layout.sublayout(
+            board, board_name, style=button_style
+        )
+        self.layout = new_layout
+        self.button = button
+        self.return_button = return_button
