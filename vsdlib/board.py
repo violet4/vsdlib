@@ -1,7 +1,7 @@
 import time
 from typing import Dict, Optional, Tuple, Callable, List, Type
 
-from PyQt5.QtWidgets import QApplication, QWidget
+# from PyQt5.QtWidgets import QApplication, QWidget
 
 from StreamDeck.DeviceManager import DeviceManager
 from StreamDeck.Devices.StreamDeck import StreamDeck
@@ -117,7 +117,7 @@ class Board:
     background_color: str
     default_button_style: ButtonStyle = ButtonStyle()
 
-    app: QApplication
+    # app: QApplication
     active_board_layout: Optional[BoardLayout]
 
     def __init__(
@@ -154,7 +154,7 @@ class Board:
 
         self.sd.set_key_callback_async(self.handle_key_event)
         # self.sd.set_key_callback(self.handle_key_event)
-        self.app = QApplication([])
+        # self.app = QApplication([])
 
     def _switch_debug(self, pressed:bool):
         if not pressed:
