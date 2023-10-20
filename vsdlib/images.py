@@ -12,10 +12,6 @@ from .colors import light_purple
 
 
 emoji_font_filepath = os.path.join('Noto_Color_Emoji', 'NotoColorEmoji-Regular.ttf')
-assets_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets')
-
-def get_asset_path(filename:str):
-    return os.path.join(assets_folder, filename)
 
 
 def img_to_bytes(img:Image) -> bytes:
