@@ -1,6 +1,7 @@
 import time
 from typing import Dict, Optional, Tuple, Callable, List, Type
 
+# here's a change to test poetry update..
 # from PyQt5.QtWidgets import QApplication, QWidget
 
 from StreamDeck.DeviceManager import DeviceManager
