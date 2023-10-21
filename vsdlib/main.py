@@ -19,7 +19,7 @@ logger.setLevel(level=logging.INFO)
 
 
 class VSDLibNamespace(argparse.Namespace):
-    toml_path: str
+    toml_path: Optional[str]
     positions: bool
 
 
@@ -69,10 +69,13 @@ async def main_helper(board:Board):
     if args.positions:
         data = produce_positions_data(BoardLayout.width, BoardLayout.height)
 
-    else:
+    elif args.toml_path:
         with open(args.toml_path, 'rb') as fr:
             # Read TOML and validate
             data = tomllib.load(fr)
+    else:
+        logger.fatal("toml_path or --positions required")
+        exit(1)
 
     valid = True
     logger.debug('BoardLayout.height %s', BoardLayout.height)
@@ -135,8 +138,8 @@ async def main_helper(board:Board):
 
 
 def main():
-    logging.basicConfig(level=logging.DEBUG)
-    logger.setLevel(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
+    logger.setLevel(level=logging.INFO)
 
     board = Board()
     BoardLayout.initialize(board)
