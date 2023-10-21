@@ -5,17 +5,24 @@ from typing import List, Union, Callable
 controller = Controller()
 
 
-def parse_keys(shortcut: str) -> List[Union[Key, str]]:
+def parse_keys(shortcut: str) -> Union[str, List[Union[Key, str]]]:
     """
     Parse a keyboard shortcut string into a list of keys.
     """
-    parsed_keys = []
-    for key in shortcut.split('+'):
-        if hasattr(Key, key):
-            parsed_keys.append(getattr(Key, key))
-        else:
-            parsed_keys.append(key)
-    return parsed_keys
+    if len(shortcut)==1:
+        return shortcut
+    elif '+' in shortcut or ',' in shortcut:
+        parsed_keys = []
+        for key in shortcut.split('+'):
+            if hasattr(Key, key):
+                parsed_keys.append(getattr(Key, key))
+            else:
+                parsed_keys.append(key)
+        if parsed_keys:
+            return parsed_keys
+        return shortcut
+    else:
+        return shortcut
 
 
 def create_execute_shortcut_function(command_string: str) -> Callable:
@@ -31,12 +38,15 @@ def create_execute_shortcut_function(command_string: str) -> Callable:
     def execute_shortcut(pressed:bool) -> None:
         if not pressed:
             return
-        # Press keys
-        for key in parsed_keys:
-            controller.press(key)
-        # Release keys in reverse order
-        for key in reversed(parsed_keys):
-            controller.release(key)
+        if isinstance(parsed_keys, str):
+            controller.type(parsed_keys)
+        else:
+            # Press keys
+            for key in parsed_keys:
+                controller.press(key)
+            # Release keys in reverse order
+            for key in reversed(parsed_keys):
+                controller.release(key)
 
     return execute_shortcut
 
