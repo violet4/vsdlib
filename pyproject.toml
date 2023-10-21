@@ -10,8 +10,14 @@ python = "^3.11"
 streamdeck = { git = "git@github.com:abcminiuser/python-elgato-streamdeck.git", tag = "0.9.4" }
 emoji = "*"
 sqlalchemy = "*"
+pillow = "^10.1.0"
+pydantic = "^2.4.2"
+pynput = "^1.7.6"
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+vsdlib = "vsdlib.main:main"

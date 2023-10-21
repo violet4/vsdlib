@@ -41,6 +41,7 @@ class BoardLayout:
     @classmethod
     def initialize(cls, board:'Board'):
         cls._initialized = True
+        cls.height = board.height
         cls.width = board.width
         cls.key_count = board.key_count
         cls.board = board
@@ -208,7 +209,10 @@ class Board:
             print(time.time()-self.timers[index])
 
         if pressed and self.debug:
-            import ipdb; ipdb.set_trace()
+            try:
+                import ipdb; ipdb.set_trace()
+            except ImportError:
+                pass
 
         button.handle_button_event(pressed)
         button(sd, index, pressed)

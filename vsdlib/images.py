@@ -14,9 +14,13 @@ from .colors import light_purple
 emoji_font_filepath = os.path.join('Noto_Color_Emoji', 'NotoColorEmoji-Regular.ttf')
 
 
-def img_to_bytes(img:Image) -> bytes:
+def img_to_bytes(img:Image, rotate:bool=False) -> bytes:
     buf = io.BytesIO()
-    img.rotate(180).save(buf, format='JPEG', quality=100, subsampling=0)
+    if rotate:
+        img = img.rotate(180)
+    # else:
+    #     img = img.rotate(90+180)
+    img.save(buf, format='JPEG', quality=100, subsampling=0)
     return buf.getvalue()
 
 
@@ -29,6 +33,7 @@ def generate_text_image(
     background_color:str,
     style:'ButtonStyle',
     text:str='',
+    rotate:bool=False,
     # background_color=light_purple,
     # text_color=black,
     # font_size=40,
@@ -41,7 +46,7 @@ def generate_text_image(
     textheight: float = 0
     font: Optional[FreeTypeFont] = None
     text_fits = False
-    font_size = style.font_size
+    font_size = int(style.font_size)
     while not text_fits:
         font = truetype('SourceCodePro-Regular.otf', size=font_size)
         # font = truetype(emoji_font_filepath, size=font_size)
@@ -57,7 +62,9 @@ def generate_text_image(
     x = (width - textwidth) / 2
     y = (height - textheight) / 2
     draw.text((x, y), text, font=font, fill=style.text_color)
-    img = rotate_image(img, 90)
+    # if rotate:
+    # img = rotate_image(img, 90)
+    img = rotate_image(img, 180)
     return img_to_bytes(img)
 
 
