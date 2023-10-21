@@ -7,12 +7,10 @@ import os
 import logging
 
 from pydantic import BaseModel
-from pynput.keyboard import Controller
 
 from .board import Board, BoardLayout
 from .buttons import Button, ButtonStyle
 from .control import create_execute_shortcut_function
-
 
 logger = logging.getLogger(__file__)
 logger.setLevel(level=logging.INFO)
@@ -110,8 +108,6 @@ async def main_helper(board:Board):
                     valid = False
             elif button_data.color:
                 kwargs['background_color'] = button_data.color
-
-            # {'text': 'shield', 'key': 'g', 'toggle': True, 'color': 'blue', 'img_toggle_true': 'shield.jpg', 'img_toggle_false': 'shield2.jpg'}
 
             logger.debug("button_data.key: '%s'", button_data.key)
             type_fn = create_execute_shortcut_function(button_data.key) if button_data.key else None

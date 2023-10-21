@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "vsdlib"
-version = "0.1.0"
+version = "0.1.0.2"
 description = ""
 authors = ["Violet Eldridge <github@violet-mica.com>"]
 readme = "README.md"

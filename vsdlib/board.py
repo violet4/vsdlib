@@ -208,11 +208,11 @@ class Board:
         elif index in self.timers:
             print(time.time()-self.timers[index])
 
-        if pressed and self.debug:
-            try:
-                import ipdb; ipdb.set_trace()
-            except ImportError:
-                pass
+        # if pressed and self.debug:
+        #     try:
+        #         import ipdb; ipdb.set_trace()
+        #     except ImportError:
+        #         pass
 
         button.handle_button_event(pressed)
         button(sd, index, pressed)
