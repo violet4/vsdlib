@@ -59,6 +59,15 @@ def produce_positions_data(cols:int, rows:int) -> dict:
     return data
 
 
+def create_button_position_generator(width:int, height:int):
+    for wid in range(width):
+        row = f'r{wid}'
+        for hei in range(height):
+            col = f'c{hei}'
+            yield f'{col}.{row}'
+            yield f'{row}.{col}'
+
+
 async def main_helper(board:Board):
     args = parse_args()
     logger.debug(args)
@@ -75,6 +84,7 @@ async def main_helper(board:Board):
         logger.fatal("toml_path or --positions required")
         exit(1)
 
+    colors: dict = data.get('colors', {})
     valid = True
     logger.debug('BoardLayout.height %s', BoardLayout.height)
     for col_num in range(BoardLayout.width):
@@ -90,6 +100,7 @@ async def main_helper(board:Board):
                 continue
 
             button_data = ButtonSchema(**button_dict)
+            button_data.color = colors.get(button_data.color, button_data.color)
             print(f"button {rk}.{ck}: {button_data}")
 
             kwargs: Kwargs = {}
