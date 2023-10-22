@@ -136,6 +136,8 @@ class Board:
         self.display_keys = dict()
         self.debug_button = Button(self._switch_debug, text='Debug', style=ButtonStyle(**grays))
         self.debug = False
+        #TODO set rotation from Board(...) input
+        self.rotation = 0
 
         # get_boards_fn = retry(10)(self.enumerate)
         if sd is not None and dm is not None:
