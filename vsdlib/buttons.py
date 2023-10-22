@@ -133,7 +133,7 @@ class Button:
         if self.slot is not None:
             self.slot.alert_button_changed()
 
-    def set_image(self, index:int, sd:StreamDeck, rotate:bool=False):
+    def set_image(self, index:int, sd:StreamDeck, rotation:int=0):
         if self.button_switches_page:
             background_color = self.style.background_color
         elif self.pressed:
@@ -144,10 +144,8 @@ class Button:
         image_set = False
         if self.style.image_path is not None:
             try:
-                bi = load_button_image(self.style.image_path, self.style.size, 90 if rotate else 180)
-                sd.set_key_image(
-                    index, bi
-                )
+                bi = load_button_image(self.style.image_path, self.style.size, rotation)
+                sd.set_key_image(index, bi)
                 image_set = True
             except:
                 logger.exception(
@@ -161,6 +159,7 @@ class Button:
                     background_color,
                     self.style,
                     self.text,
+                    rotation=rotation,
                 ),
             )
 
@@ -212,12 +211,12 @@ class ButtonSlot:
         self.button = Button()
         self.sd = sd
 
-    def set_button(self, button:Button):
+    def set_button(self, button:Button, rotation:int=0):
         if self.button is not None:
             self.button.clear_slot()
         self.button = button
         self.button.set_slot(self)
-        self.button.set_image(self.index, self.sd)
+        self.button.set_image(self.index, self.sd, rotation=rotation)
 
     def alert_button_changed(self):
         if self.button is not None:

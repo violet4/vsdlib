@@ -1,16 +1,18 @@
 import time
-from typing import Dict, Optional, Tuple, Callable, List, Type
+from typing import Dict, Optional, Tuple, Callable, List, Type, TypeVar
 
 # here's a change to test poetry update..
 # from PyQt5.QtWidgets import QApplication, QWidget
 
 from StreamDeck.DeviceManager import DeviceManager
 from StreamDeck.Devices.StreamDeck import StreamDeck
+# from StreamDeck.Transport.Transport import Transport
 
 from .button_style import ButtonStyle
 from .buttons import Button, ButtonSlot
 from .colors import black, reds, blues, greens, grays
 
+# T = TypeVar('T')
 def retry(max_count=20, seconds=1):
     """
     if stream deck is started at login, the process that starts it may not have
@@ -108,6 +110,7 @@ class Board:
     sd: StreamDeck
     _width: int
     _height: int
+    rotation: int
     timers: Dict[int, float]
     display_keys: Dict[str, int]
     dm: DeviceManager
@@ -122,6 +125,9 @@ class Board:
     # app: QApplication
     active_board_layout: Optional[BoardLayout]
 
+    def enumerate(self) -> List[StreamDeck]:
+        return self.dm.enumerate()
+
     def __init__(
         self, sd:Optional[StreamDeck]=None, dm:Optional[DeviceManager]=None,
     ):
@@ -131,10 +137,29 @@ class Board:
         self.debug_button = Button(self._switch_debug, text='Debug', style=ButtonStyle(**grays))
         self.debug = False
 
+        # get_boards_fn = retry(10)(self.enumerate)
         if sd is not None and dm is not None:
             self.sd = sd
             self.dm = dm
         else:
+            #   File "/home/violet/git/violet/hw/streamdeck/vsdlib/vsdlib/board.py", line 140, in __init__                                                                                                  
+            #     self.sd: StreamDeck = self.dm.enumerate()[0]                                                                                                                                              
+            #                           ^^^^^^^^^^^^^^^^^^^                                                  
+            #   File "/home/violet/.cache/pypoetry/virtualenvs/violet-streamdeck-u4LCKzE3-py3.11/lib/python3.11/site-packages/StreamDeck/DeviceManager.py", line 116, in enumerate
+            #     found_devices = self.transport.enumerate(vid=vid, pid=pid)                         
+            #                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            #   File "/home/violet/.cache/pypoetry/virtualenvs/violet-streamdeck-u4LCKzE3-py3.11/lib/python3.11/site-packages/StreamDeck/Transport/LibUSBHIDAPI.py", line 533, in enumerate
+            #     return [LibUSBHIDAPI.Device(hidapi, d) for d in hidapi.enumerate(vendor_id=vid, product_id=pid)]
+            #                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            #   File "/home/violet/.cache/pypoetry/virtualenvs/violet-streamdeck-u4LCKzE3-py3.11/lib/python3.11/site-packages/StreamDeck/Transport/LibUSBHIDAPI.py", line 180, in enumerate
+            #     device_enumeration = self.hidapi.hid_enumerate(vendor_id, product_id)
+            #                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            # KeyboardInterrupt
+            #TODO make less assumptions e.g. support multiple stream decks, maybe stream deck is already grabbed by another process, no stream deck at all, etc.
+            # stream_decks: Optional[List[StreamDeck]] = get_boards_fn()
+            # self.sd: StreamDeck = stream_decks[0]
+            # if stream_decks is not None:
+            # else:
             self.dm = DeviceManager()
             self.sd: StreamDeck = self.dm.enumerate()[0]
             self.sd.open()
@@ -147,6 +172,8 @@ class Board:
         ButtonStyle.set_size(self.size)
         self._width = self.sd.KEY_COLS
         self._height = self.key_count//self.sd.KEY_COLS
+        BoardLayout.initialize(self)
+
         self.active_board_layout = None
 
         self.slots = {
@@ -157,6 +184,9 @@ class Board:
         self.sd.set_key_callback_async(self.handle_key_event)
         # self.sd.set_key_callback(self.handle_key_event)
         # self.app = QApplication([])
+
+    def set_rotation(self, degrees:int=0):
+        self.rotation = degrees
 
     def _switch_debug(self, pressed:bool):
         if not pressed:
@@ -228,13 +258,17 @@ class Board:
         self.active_board_layout = layout
         self.buttons = layout.positions
         for i in self.buttons.keys():
-            self.slots[i].set_button(self.buttons[i])
+            self.slots[i].set_button(self.buttons[i], rotation=self.rotation)
         # for index, button in layout.positions.items():
         #     self.buttons[index] = button
         # self.sd.set_key_callback(self.handle_key_event)
 
     def sub_board(self):
         return Board(self.sd, self.dm)
+
+    def create_layout(self) -> BoardLayout:
+        main_layout = BoardLayout()
+        return main_layout
 
 
 class SubLayout(BoardLayout):

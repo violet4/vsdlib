@@ -67,7 +67,7 @@ def construct_exe_file_contents(binary_path:str):
         env_setup = 'source "{}"\n'.format(options['environment_file'])
     else:
         # fresh environment
-        env_setup = "env -i DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY "
+        env_setup = "env -i HOME=$HOME DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY "
     exe_file_contents = f"{env_setup}{binary_path}"
     return exe_file_contents
 

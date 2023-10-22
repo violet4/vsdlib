@@ -33,7 +33,7 @@ def generate_text_image(
     background_color:str,
     style:'ButtonStyle',
     text:str='',
-    rotate:bool=False,
+    rotation:int=0,
     # background_color=light_purple,
     # text_color=black,
     # font_size=40,
@@ -62,8 +62,8 @@ def generate_text_image(
     x = (width - textwidth) / 2
     y = (height - textheight) / 2
     draw.text((x, y), text, font=font, fill=style.text_color)
-    # if rotate:
-    # img = rotate_image(img, 90)
+    if rotation:
+        img = rotate_image(img, rotation)
     img = rotate_image(img, 180)
     return img_to_bytes(img)
 
@@ -88,14 +88,14 @@ def generate_emoji_image(
     return img_to_bytes(img)
 
 
-def load_button_image(filepath:str, size:Tuple[int,int], rotate:int=0) -> bytes:
+def load_button_image(filepath:str, size:Tuple[int,int], rotation:int=0) -> bytes:
     image = PILImage.open(filepath)
     N, M = size # Sample values
     image_resized = image.resize((N, M))
     buffer = io.BytesIO()
     image_resized.save(buffer, format="JPEG")
     image_jpeg = PILImage.open(buffer)
-    image_rotated = image_jpeg.rotate(rotate, expand=True)
+    image_rotated = image_jpeg.rotate(rotation, expand=True)
     final_buffer = io.BytesIO()
     image_rotated.save(final_buffer, format="JPEG")
     image_bytes = final_buffer.getvalue()

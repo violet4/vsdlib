@@ -5,26 +5,39 @@ from typing import Optional, TypedDict, NotRequired
 import asyncio
 import os
 import logging
+import sys
 
 from pydantic import BaseModel
 
-from .board import Board, BoardLayout
-from .buttons import Button, ButtonStyle
-from .control import create_execute_shortcut_function
+from vsdlib.board import Board, BoardLayout
+from vsdlib.buttons import Button, ButtonStyle
+from vsdlib.control import create_execute_shortcut_function
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.INFO)
 
 
 class VSDLibNamespace(argparse.Namespace):
     toml_path: Optional[str]
     positions: bool
+    log_level: str = 'INFO'
+
+
+def list_log_levels():
+    levels = [
+        (a,getattr(logging,a))
+        for a in dir(logging)
+        if a.upper()==a
+        and isinstance(getattr(logging, a), int)
+    ]
+    return [l[0] for l in sorted(levels, key=lambda a:a[1])]
 
 
 def parse_args() -> VSDLibNamespace:
     parser = argparse.ArgumentParser()
     parser.add_argument('toml_path', nargs='?', help='the toml file to create buttons from')
     parser.add_argument('--positions', default=False, action='store_true', help='use the demo "positions" board')
+    parser.add_argument('--log-level', default=VSDLibNamespace.log_level, help=f"log level. default: %(default)s; options: {list_log_levels()}")
     args = parser.parse_args(namespace=VSDLibNamespace())
     return args
 
@@ -68,8 +81,8 @@ def create_button_position_generator(width:int, height:int):
             yield f'{row}.{col}'
 
 
-async def main_helper(board:Board):
-    args = parse_args()
+async def main_helper(board:Board, args:VSDLibNamespace):
+
     logger.debug(args)
     logger.debug(args.toml_path)
     layout = BoardLayout()
@@ -145,14 +158,22 @@ async def main_helper(board:Board):
 
 
 def main():
-    logging.basicConfig(level=logging.INFO)
-    logger.setLevel(level=logging.INFO)
+    args = parse_args()
+    log_level = getattr(logging, args.log_level)
+    logger.setLevel(level=log_level)
+    logging.basicConfig(level=log_level)
+
+    if args.log_level.lower() == 'debug':
+        formatter = logging.Formatter('%(levelname)s:%(name)s:%(pathname)s:%(lineno)d:%(message)s')
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
 
     board = Board()
     BoardLayout.initialize(board)
     try:
         loop = asyncio.get_event_loop()
-        init_ok = loop.run_until_complete(main_helper(board))
+        init_ok = loop.run_until_complete(main_helper(board, args))
         if init_ok:
             loop.run_forever()
     finally:
