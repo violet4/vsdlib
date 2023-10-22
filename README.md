@@ -27,6 +27,13 @@ color='light_pink'
 
 See more examples in [example.toml](example.toml).
 
-Then you can run it with:
+Add `vsdlib` as a dependency to your project.
+
+The recommended method us by using [`python poetry`](https://python-poetry.org/docs/basic-usage/):
+
+    # requires that you have a github ssh key set up
+    poetry add git+ssh://git@github.com/violet4/vsdlib.git
+
+Then you can run from a toml file with:
 
 `poetry run vsdlib example.toml`
