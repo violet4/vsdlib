@@ -43,14 +43,41 @@ def parse_args() -> VSDLibNamespace:
 
 
 class ButtonSchema(BaseModel):
+    """
+    Absolute minimum a button can have is text and/or image, and zero or more button_schema_classes
+    """
     text: str
-    key: Optional[str] = None
-    toggle: bool = False
     color: Optional[str] = None
+    img: Optional[str] = None
+    button_schema_classes: Optional[str] = None
+
+
+#TODO:make a version that can start and interact with a separate thread that's listening for incoming connection requests
+class PythonScriptButtonSchema(ButtonSchema):
+    script_path: str
+
+class PressButtonSchema(ButtonSchema):
+    key: Optional[str] = None
+    delay: Optional[float] = None
+
+class ToggleButtonSchema(ButtonSchema):
+    toggle: bool = False
     toggle_true_img: Optional[str] = None
     toggle_false_img: Optional[str] = None
-    img: Optional[str] = None
 
+class TogglePressButtonSchema(*[PressButtonSchema, ToggleButtonSchema]):
+    pass
+
+schema_name_to_schema = {
+    'PythonScriptButtonSchema': PythonScriptButtonSchema,
+    'PressButtonSchema': PressButtonSchema,
+    'ToggleButtonSchema': ToggleButtonSchema,
+    'TogglePressButtonSchema': TogglePressButtonSchema,
+}
+
+
+# In [15]: with con.pressed('2'):
+#     ...:     time.sleep(0.1)
 
 class Kwargs(TypedDict):
     background_color: NotRequired[str]
@@ -113,18 +140,20 @@ async def main_helper(board:Board, args:VSDLibNamespace):
                 continue
 
             button_data = ButtonSchema(**button_dict)
+            # import pdb; pdb.set_trace()
+            schema_names = list(filter(None, (button_data.button_schema_classes or '').split(',')))
+            logger.info('schema_names: %s', schema_names)
+            button_schema_classes = [
+                schema_name_to_schema[name]
+                for name in schema_names
+            ]
+            logger.info("button_schema_classes: %s", button_schema_classes)
             button_data.color = colors.get(button_data.color, button_data.color)
             print(f"button {rk}.{ck}: {button_data}")
 
             kwargs: Kwargs = {}
             # handle cases from most specific to least specific
-            if button_data.toggle:
-                #TODO enable buttons to be "toggle views" that when pressed switch to a different image
-                if button_data.toggle_true_img:
-                    pass
-                if button_data.toggle_false_img:
-                    pass
-            elif button_data.img:
+            if button_data.img:
                 if os.path.exists(button_data.img):
                     kwargs['image_path'] = button_data.img
                 else:
@@ -133,11 +162,19 @@ async def main_helper(board:Board, args:VSDLibNamespace):
             elif button_data.color:
                 kwargs['background_color'] = button_data.color
 
-            logger.debug("button_data.key: '%s'", button_data.key)
-            type_fn = create_execute_shortcut_function(button_data.key) if button_data.key else None
+            button_fn = None
+            if button_schema_classes:
+                class ValidatorClass(*button_schema_classes):
+                    pass
+                button_data_extra = ValidatorClass(**button_dict)
+                if isinstance(button_data_extra, PressButtonSchema):
+                    logger.error("button_data_extra.key: '%s'", button_data_extra.key)
+                    button_fn = create_execute_shortcut_function(button_data_extra.key, button_data_extra.delay) if button_data_extra.key else None
+                else:
+                    logger.error("failed to match with isinstance(button_data_extra, PressButtonSchema)")
 
             button = Button(
-                fn=type_fn, name=None, text=button_data.text,
+                fn=button_fn, name=None, text=button_data.text,
                 style=ButtonStyle(
                     **kwargs,
                     # background_color,

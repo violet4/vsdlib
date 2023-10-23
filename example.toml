@@ -6,6 +6,7 @@ light_pink='#f77'
 
 [c0.r0]
 text="g"
+button_schema_classes=""
 key="g"
 color='light_pink'
 # img_toggle_true='assets/minecraft.jpg'

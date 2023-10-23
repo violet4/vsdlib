@@ -1,5 +1,6 @@
-from typing import List, Union, Callable
+from typing import List, Union, Callable, Optional
 import logging
+from time import sleep
 
 from pynput.keyboard import Controller, Key
 
@@ -31,7 +32,7 @@ def parse_keys(shortcut: str) -> Union[str, List[Union[Key, str]]]:
         return shortcut
 
 
-def create_execute_shortcut_function(command_string: str) -> Callable:
+def create_execute_shortcut_function(command_string: str, delay:Optional[float]=0.0) -> Callable:
     """
     command_string examples:
         alt+k,alt-r
@@ -45,14 +46,25 @@ def create_execute_shortcut_function(command_string: str) -> Callable:
     def execute_shortcut(pressed:bool) -> None:
         if not pressed:
             return
+        #TODO:refactor..
         if isinstance(parsed_keys, str):
             logger.debug("typing: %s", parsed_keys)
-            controller.type(parsed_keys)
+            if len(parsed_keys) == 1:
+                controller.press(parsed_keys)
+                if delay:
+                    logger.error('sleeping %s seconds', delay)
+                    sleep(delay)
+                controller.release(parsed_keys)
+            else:
+                controller.type(parsed_keys)
         else:
             # Press keys
             for key in parsed_keys:
                 logger.debug("pressing (and not releasing): %s", key)
                 controller.press(key)
+            if delay:
+                logger.error('sleeping %s seconds', delay)
+                sleep(delay)
             # Release keys in reverse order
             for key in reversed(parsed_keys):
                 logger.debug("releasing key: %s", key)
