@@ -6,6 +6,7 @@ import asyncio
 import os
 import logging
 import sys
+from os.path import exists, dirname, abspath, join
 
 from pydantic import BaseModel
 
@@ -117,6 +118,11 @@ async def main_helper(board:Board, args:VSDLibNamespace):
         data = produce_positions_data(BoardLayout.width, BoardLayout.height)
 
     elif args.toml_path:
+        this_dir = dirname(abspath(__file__))
+        demo_path = join(this_dir, 'demos', args.toml_path)
+        if exists(demo_path) and not exists(args.toml_path):
+            args.toml_path = demo_path
+
         with open(args.toml_path, 'rb') as fr:
             # Read TOML and validate
             data = tomllib.load(fr)
