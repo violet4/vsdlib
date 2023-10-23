@@ -52,7 +52,6 @@ def create_execute_shortcut_function(command_string: str, delay:Optional[float]=
             if len(parsed_keys) == 1:
                 controller.press(parsed_keys)
                 if delay:
-                    logger.error('sleeping %s seconds', delay)
                     sleep(delay)
                 controller.release(parsed_keys)
             else:
@@ -63,7 +62,6 @@ def create_execute_shortcut_function(command_string: str, delay:Optional[float]=
                 logger.debug("pressing (and not releasing): %s", key)
                 controller.press(key)
             if delay:
-                logger.error('sleeping %s seconds', delay)
                 sleep(delay)
             # Release keys in reverse order
             for key in reversed(parsed_keys):

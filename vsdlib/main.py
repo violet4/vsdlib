@@ -168,10 +168,7 @@ async def main_helper(board:Board, args:VSDLibNamespace):
                     pass
                 button_data_extra = ValidatorClass(**button_dict)
                 if isinstance(button_data_extra, PressButtonSchema):
-                    logger.error("button_data_extra.key: '%s'", button_data_extra.key)
                     button_fn = create_execute_shortcut_function(button_data_extra.key, button_data_extra.delay) if button_data_extra.key else None
-                else:
-                    logger.error("failed to match with isinstance(button_data_extra, PressButtonSchema)")
 
             button = Button(
                 fn=button_fn, name=None, text=button_data.text,

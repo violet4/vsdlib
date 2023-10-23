@@ -19,10 +19,15 @@ light_pink='#f77'
 [c0.r0]
 # the button will display the text "g"
 text="g"
-# when pressed, the button will type the character "g"
-key="g"
 # reference to `light_pink` from the `colors` section above
 color='light_pink'
+
+# press a keyboard character, perform a hotkey, or type something
+button_schema_classes="PressButtonSchema"
+# when pressed, the button will type the character "g"
+key="g"
+# delay this many seconds (some applications require a "firm" key press)
+delay=0.1
 ```
 
 See more examples in [example.toml](example.toml).
