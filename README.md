@@ -7,6 +7,8 @@ VSDLib is short for "violet stream deck library".
 
 [violet_streamdeck](https://github.com/violet4/violet_streamdeck) is a program that demonstrates the use of vsdlib.
 
+![Screenshot of VSDLib in action on a Stream Deck XL](streamdeck.png)
+
 # Getting Started
 
 ```toml
