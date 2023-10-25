@@ -4,13 +4,17 @@
 light_pink='#f77'
 
 
-[c0.r0]
-text="g"
+[c3.r0]
+text="c3.r0"
 button_schema_classes=""
 key="g"
 color='light_pink'
-# img_toggle_true='assets/minecraft.jpg'
-# img_toggle_false='assets/minecraft.jpg'
+
+[r3.c0]
+text="r3.c0"
+button_schema_classes=""
+key="g"
+color='light_pink'
 
 [r5.c2]
 text="alt+w"

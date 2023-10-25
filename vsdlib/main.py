@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from vsdlib.board import Board, BoardLayout
 from vsdlib.buttons import Button, ButtonStyle
 from vsdlib.control import create_execute_shortcut_function
+from vsdlib.toml_loader import normalize
 
 NO_LOG_FILE = 1
 
@@ -104,15 +105,6 @@ def produce_positions_data(cols:int, rows:int) -> dict:
     return data
 
 
-def create_button_position_generator(width:int, height:int):
-    for wid in range(width):
-        row = f'r{wid}'
-        for hei in range(height):
-            col = f'c{hei}'
-            yield f'{col}.{row}'
-            yield f'{row}.{col}'
-
-
 async def main_helper(board:Board, args:VSDLibNamespace):
 
     logger.debug(args)
@@ -134,12 +126,15 @@ async def main_helper(board:Board, args:VSDLibNamespace):
         logger.fatal("toml_path or --positions required")
         exit(1)
 
+
+    col_to_row_data = normalize(data)
     colors: dict = data.get('colors', {})
     valid = True
     logger.debug('BoardLayout.height %s', BoardLayout.height)
+
     for col_num in range(BoardLayout.width):
         ck = f'c{col_num}'
-        col = data.get(ck, None)
+        col = col_to_row_data.get(ck, None)
         if col is None:
             continue
 
