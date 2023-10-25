@@ -14,7 +14,9 @@ from vsdlib.board import Board, BoardLayout
 from vsdlib.buttons import Button, ButtonStyle
 from vsdlib.control import create_execute_shortcut_function
 
-logger = logging.getLogger(__name__)
+NO_LOG_FILE = 1
+
+logger = logging.getLogger(__file__)
 logger.setLevel(level=logging.INFO)
 
 
@@ -22,6 +24,7 @@ class VSDLibNamespace(argparse.Namespace):
     toml_path: Optional[str]
     positions: bool
     log_level: str = 'INFO'
+    log_file: Optional[str]
 
 
 def list_log_levels():
@@ -39,6 +42,7 @@ def parse_args() -> VSDLibNamespace:
     parser.add_argument('toml_path', nargs='?', help='the toml file to create buttons from')
     parser.add_argument('--positions', default=False, action='store_true', help='use the demo "positions" board')
     parser.add_argument('--log-level', default=VSDLibNamespace.log_level, help=f"log level. default: %(default)s; options: {list_log_levels()}")
+    parser.add_argument('--log-file', default=NO_LOG_FILE, nargs='?', help=f"log file. if specified without a filename, '{default_log_file}' will be appended to.")
     args = parser.parse_args(namespace=VSDLibNamespace())
     return args
 
@@ -146,16 +150,15 @@ async def main_helper(board:Board, args:VSDLibNamespace):
                 continue
 
             button_data = ButtonSchema(**button_dict)
-            # import pdb; pdb.set_trace()
             schema_names = list(filter(None, (button_data.button_schema_classes or '').split(',')))
-            logger.info('schema_names: %s', schema_names)
+            #logger.info('schema_names: %s', schema_names)
             button_schema_classes = [
                 schema_name_to_schema[name]
                 for name in schema_names
             ]
-            logger.info("button_schema_classes: %s", button_schema_classes)
+            #logger.info("button_schema_classes: %s", button_schema_classes)
             button_data.color = colors.get(button_data.color, button_data.color)
-            print(f"button {rk}.{ck}: {button_data}")
+            #print(f"button {rk}.{ck}: {button_data}")
 
             kwargs: Kwargs = {}
             # handle cases from most specific to least specific
@@ -197,17 +200,41 @@ async def main_helper(board:Board, args:VSDLibNamespace):
         await asyncio.sleep(1.2)
 
 
+this_file = abspath(__file__)
+this_dir = dirname(this_file)
+parent_dir = dirname(this_dir)
+default_log_file = join(parent_dir, 'log.log')
+
+log_format = '%(levelname)s:%(module)s:%(asctime)s:%(pathname)s:%(lineno)d:%(message)s'
+log_formatter = logging.Formatter(log_format)
+
+
 def main():
     args = parse_args()
-    log_level = getattr(logging, args.log_level)
+    log_level = getattr(logging, args.log_level.upper())
     logger.setLevel(level=log_level)
-    logging.basicConfig(level=log_level)
+    logging.basicConfig(level=log_level, format=log_format)
+    logging.getLogger().handlers[0].setFormatter(log_formatter)
 
-    if args.log_level.lower() == 'debug':
-        formatter = logging.Formatter('%(levelname)s:%(name)s:%(pathname)s:%(lineno)d:%(message)s')
-        handler = logging.StreamHandler(sys.stdout)
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
+    log_file_path = None
+    if args.log_file == NO_LOG_FILE:
+        pass
+    elif args.log_file is None:
+        # user specified --log-file without a log file name, so use default log file.
+        log_file_path = default_log_file
+    else:
+        if not os.path.exists(args.log_file):
+            logger.error("Log file specified '%s' does not exist", args.log_file)
+            exit(1)
+        log_file_path = args.log_file
+
+    if log_file_path is not None:
+        logger.info("setting up log file for logging: '%s'", log_file_path)
+        file_handler = logging.FileHandler(log_file_path)
+        file_handler.setFormatter(log_formatter)
+        file_handler.setLevel(log_level)
+        logger.addHandler(file_handler)
+        logger.info("finished setting up log file for logging: '%s'", log_file_path)
 
     board = Board()
     BoardLayout.initialize(board)
@@ -218,3 +245,6 @@ def main():
             loop.run_forever()
     finally:
         board.close()
+
+if __name__ == '__main__':
+    main()
