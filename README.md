@@ -44,3 +44,18 @@ The recommended method us by using [`python poetry`](https://python-poetry.org/d
 Then you can run from a toml file with:
 
 `poetry run vsdlib example.toml`
+
+# Architecture
+
+## TODO: Diagram Goes Here
+
+Classes:
+
+* Board
+    * BoardLayout
+    * SubBoardLayout
+* Button
+* ButtonStyle
+* ButtonSlot
+* Image - doesn't exist but should exist to pull out the button image handling like rotation/dimming/toggling etc
+* Widget
