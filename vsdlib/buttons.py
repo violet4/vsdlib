@@ -210,17 +210,19 @@ class ButtonSlot:
         self.index = index
         self.button = Button()
         self.sd = sd
+        self.rotation = 0
 
     def set_button(self, button:Button, rotation:int=0):
         if self.button is not None:
             self.button.clear_slot()
         self.button = button
         self.button.set_slot(self)
-        self.button.set_image(self.index, self.sd, rotation=rotation)
+        self.rotation = rotation
+        self.button.set_image(self.index, self.sd, self.rotation)
 
     def alert_button_changed(self):
         if self.button is not None:
-            self.button.set_image(self.index, self.sd)
+            self.button.set_image(self.index, self.sd, self.rotation)
 
     def set_image(self):
-        self.button.set_image(self.index, self.sd)
+        self.button.set_image(self.index, self.sd, self.rotation)
