@@ -218,8 +218,8 @@ def main():
         # user specified --log-file without a log file name, so use default log file.
         log_file_path = default_log_file
     else:
-        if not os.path.exists(args.log_file):
-            logger.error("Log file specified '%s' does not exist", args.log_file)
+        if not os.path.exists(os.path.dirname(args.log_file)):
+            logger.error("Directory of log file specified '%s' does not exist", args.log_file)
             exit(1)
         log_file_path = args.log_file
 
