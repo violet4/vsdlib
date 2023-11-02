@@ -7,3 +7,7 @@ simple.py
 violetdeck.ipynb
 commit.txt
 nohup.out
+configure
+Makefile.in
+aclocal.m4
+log.log

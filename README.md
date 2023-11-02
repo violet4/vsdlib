@@ -59,3 +59,5 @@ Classes:
 * ButtonSlot
 * Image - doesn't exist but should exist to pull out the button image handling like rotation/dimming/toggling etc
 * Widget
+cd build; ../configure
+make
